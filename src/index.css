@@ -1,0 +1,89 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --tiber: #0A3948;
+    --horizon: #5794A4;
+    --downy: #64CDD1;
+    --powder: #B8E3E6;
+  }
+
+  body {
+    background-color: var(--powder);
+    color: var(--tiber);
+    font-family: 'Inter', sans-serif;
+    overflow-x: hidden;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-tiber text-white px-6 py-3 rounded-full font-semibold transition-all hover:bg-downy hover:scale-105 shadow-lg;
+  }
+  
+  .btn-secondary {
+    @apply border-2 border-horizon text-tiber px-6 py-3 rounded-full font-semibold transition-all hover:bg-horizon hover:text-white hover:scale-105;
+  }
+  
+  .glass-card {
+    @apply bg-white/60 backdrop-blur-md border border-white/40 rounded-2xl shadow-lg transition-all hover:shadow-xl;
+  }
+  
+  .reveal {
+    opacity: 0;
+    transform: translateY(40px);
+    transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  
+  .reveal.active {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  
+  .hover-lift {
+    @apply transition-all duration-300;
+  }
+  
+  .hover-lift:hover {
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: 0 20px 40px rgba(10, 57, 72, 0.1);
+  }
+  
+  .animate-float {
+    animation: float 4s ease-in-out infinite;
+  }
+  
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-15px); }
+  }
+  
+  @keyframes slideRight {
+    from { transform: translateX(-20px); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+  }
+  
+  .animate-slide-right {
+    animation: slideRight 0.5s ease-out forwards;
+  }
+  
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  
+  .animate-fade-up {
+    animation: fadeInUp 0.6s ease-out forwards;
+  }
+  
+  @keyframes pulse-glow {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(100, 205, 209, 0.6); }
+    50% { box-shadow: 0 0 0 12px rgba(100, 205, 209, 0); }
+  }
+  
+  .btn-glow:hover {
+    animation: pulse-glow 1.5s infinite;
+  }
+}
