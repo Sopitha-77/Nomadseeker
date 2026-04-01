@@ -1,9 +1,12 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
+// Remove useNavigate import since you're not using React Router
+// import { useNavigate } from 'react-router-dom';
 import { 
   ArrowRight, Compass, DollarSign, Globe, Play, ChevronRight, 
   CheckCircle, Star, MessageCircle, X, MapPin, Briefcase, 
   TrendingUp, Rocket, Users, Shield, Zap, Target,
-  ChevronLeft, Pause, Award, Heart, Coffee
+  ChevronLeft, Pause, Award, Heart, Coffee, Lock as LockIcon,
+  Crown, User, Briefcase as BriefcaseIcon, Code, Brain
 } from 'lucide-react';
 
 // Import your images
@@ -123,27 +126,63 @@ const CustomStyles = () => (
       background-size: 1000px 100%;
       animation: shimmer 2s infinite;
     }
+
+    @keyframes popupFadeIn {
+      from {
+        opacity: 0;
+        transform: scale(0.9) translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+      }
+    }
+    .animate-popup {
+      animation: popupFadeIn 0.3s ease-out forwards;
+    }
+
+    @media (max-width: 768px) {
+      .ml-\\[280px\\] {
+        margin-left: 0 !important;
+      }
+    }
   `}} />
 );
 
 // --- HELPER COMPONENTS ---
 
 const Confetti = () => {
-  const colors = ['#0A3948', '#5794A4', '#64CDD1', '#FFFFFF', '#FFD700'];
+  const [pieces, setPieces] = useState([]);
+  
+  useEffect(() => {
+    const colors = ['#0A3948', '#5794A4', '#64CDD1', '#FFFFFF', '#FFD700'];
+    const newPieces = [...Array(80)].map((_, i) => ({
+      id: i,
+      left: Math.random() * 100,
+      backgroundColor: colors[Math.floor(Math.random() * colors.length)],
+      duration: Math.random() * 3 + 2,
+      delay: Math.random() * 0.5,
+      borderRadius: Math.random() > 0.5 ? '50%' : '2px',
+      width: Math.random() * 8 + 4,
+      height: Math.random() * 8 + 4
+    }));
+    setPieces(newPieces);
+  }, []);
+
   return (
     <div className="fixed inset-0 pointer-events-none z-[9999] overflow-hidden">
-      {[...Array(80)].map((_, i) => (
+      {pieces.map((piece) => (
         <div
-          key={i}
-          className="confetti-piece w-2 h-2 absolute"
+          key={piece.id}
+          className="confetti-piece absolute"
           style={{
-            left: `${Math.random() * 100}vw`,
-            backgroundColor: colors[Math.floor(Math.random() * colors.length)],
-            animationDuration: `${Math.random() * 3 + 2}s`,
-            animationDelay: `${Math.random() * 0.5}s`,
-            borderRadius: Math.random() > 0.5 ? '50%' : '2px',
-            width: `${Math.random() * 8 + 4}px`,
-            height: `${Math.random() * 8 + 4}px`
+            left: `${piece.left}vw`,
+            backgroundColor: piece.backgroundColor,
+            animationDuration: `${piece.duration}s`,
+            animationDelay: `${piece.delay}s`,
+            borderRadius: piece.borderRadius,
+            width: `${piece.width}px`,
+            height: `${piece.height}px`
           }}
         />
       ))}
@@ -151,9 +190,149 @@ const Confetti = () => {
   );
 };
 
-// --- MAIN APPLICATION ---
+// User Type Selection Popup Component
+const UserTypePopup = ({ onSelect, onClose }) => {
+  const [selectedType, setSelectedType] = useState(null);
+  const [showActionPopup, setShowActionPopup] = useState(false);
 
-export default function Home() {
+  const userTypes = [
+    { 
+      id: 'entrepreneur', 
+      title: 'Entrepreneur', 
+      subtitle: 'Founder · Innovator',
+      description: 'Visionary leaders building something new',
+      icon: Rocket,
+      color: '#64CDD1',
+      bgGradient: 'from-[#64CDD1]/20 to-[#64CDD1]/5'
+    },
+    { 
+      id: 'managerial', 
+      title: 'Managerial', 
+      subtitle: 'Marketing · Business Developer',
+      description: 'Strategic thinkers driving growth',
+      icon: TrendingUp,
+      color: '#5794A4',
+      bgGradient: 'from-[#5794A4]/20 to-[#5794A4]/5'
+    },
+    { 
+      id: 'technician', 
+      title: 'Technician', 
+      subtitle: 'Developer · Creator · Sales',
+      description: 'Hands-on experts executing excellence',
+      icon: Code,
+      color: '#0A3948',
+      bgGradient: 'from-[#0A3948]/20 to-[#0A3948]/5'
+    }
+  ];
+
+  const handleTypeSelect = (typeId) => {
+    setSelectedType(typeId);
+    setShowActionPopup(true);
+  };
+
+  const handleStartChallenge = () => {
+    if (onSelect) {
+      onSelect(selectedType, 'start');
+    }
+  };
+
+  const handleLater = () => {
+    if (onClose) {
+      onClose();
+    }
+  };
+
+  if (showActionPopup) {
+    const selected = userTypes.find(t => t.id === selectedType);
+    return (
+      <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={handleLater}>
+        <div className="bg-white rounded-3xl max-w-md w-full mx-4 p-8 shadow-2xl animate-popup" onClick={e => e.stopPropagation()}>
+          <div className="text-center mb-6">
+            <div 
+              className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4"
+              style={{ background: `linear-gradient(135deg, ${selected.color}20, ${selected.color}10)` }}
+            >
+              <selected.icon size={36} style={{ color: selected.color }} />
+            </div>
+            <h2 className="text-2xl font-bold text-[#0A3948] mb-2">Ready to Begin?</h2>
+            <p className="text-gray-500 text-sm">
+              You've chosen the <span className="font-bold" style={{ color: selected.color }}>{selected.title}</span> path
+            </p>
+          </div>
+
+          <div className="flex gap-3">
+            <button
+              onClick={handleStartChallenge}
+              className="flex-1 px-6 py-3 bg-gradient-to-r from-[#0A3948] to-[#5794A4] text-white rounded-xl font-semibold hover:shadow-lg hover:-translate-y-0.5 transition-all"
+            >
+              Let's Start 7 Days Challenge <Rocket size={16} className="inline ml-1" />
+            </button>
+            <button
+              onClick={handleLater}
+              className="px-6 py-3 border-2 border-gray-200 text-gray-500 rounded-xl font-semibold hover:bg-gray-50 transition-all"
+            >
+              Later
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={onClose}>
+      <div className="bg-white rounded-3xl max-w-3xl w-full mx-4 p-8 shadow-2xl animate-popup" onClick={e => e.stopPropagation()}>
+        <div className="flex justify-between items-center mb-4">
+          <div className="w-16 h-16 bg-gradient-to-br from-[#64CDD1]/20 to-[#5794A4]/20 rounded-full flex items-center justify-center">
+            <Compass size={32} className="text-[#0A3948]" />
+          </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+            <X size={24} />
+          </button>
+        </div>
+        <div className="text-center mb-6">
+          <h2 className="text-2xl font-bold text-[#0A3948] mb-2">Choose Your Path</h2>
+          <p className="text-gray-500 text-sm">Select the role that best describes you</p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+          {userTypes.map((type) => {
+            const Icon = type.icon;
+            const isSelected = selectedType === type.id;
+            return (
+              <button
+                key={type.id}
+                onClick={() => handleTypeSelect(type.id)}
+                className={`p-6 rounded-2xl text-center transition-all transform hover:scale-105 ${
+                  isSelected 
+                    ? 'ring-2 ring-[#64CDD1] shadow-lg' 
+                    : 'hover:shadow-md'
+                }`}
+                style={{
+                  background: isSelected ? `linear-gradient(135deg, ${type.color}15, ${type.color}05)` : '#F8FAFC',
+                  border: `1px solid ${isSelected ? type.color : '#E2E8F0'}`
+                }}
+              >
+                <div className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-3" style={{ background: `${type.color}15` }}>
+                  <Icon size={28} style={{ color: type.color }} />
+                </div>
+                <h3 className="font-bold text-lg mb-1" style={{ color: type.color }}>{type.title}</h3>
+                <p className="text-xs text-gray-500 font-medium">{type.subtitle}</p>
+                <p className="text-[10px] text-gray-400 mt-2">{type.description}</p>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// --- MAIN APPLICATION ---
+export default function Home({ setActiveTab }) {  // Add setActiveTab as a prop
+  // Remove navigate
+  // const navigate = useNavigate();
+  
   // --- STATE MANAGEMENT ---
   const [onboardingStep, setOnboardingStep] = useState(1);
   const [onboardingData, setOnboardingData] = useState({ pull: '', level: '', speed: '' });
@@ -163,6 +342,7 @@ export default function Home() {
   const [hasShownExitPopup, setHasShownExitPopup] = useState(false);
   const [activeTestimonial, setActiveTestimonial] = useState(0);
   const [imageErrors, setImageErrors] = useState({});
+  const [showUserTypePopup, setShowUserTypePopup] = useState(false);
   
   // Slider state
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -176,10 +356,6 @@ export default function Home() {
     { id: 4, src: photo4, fallback: "https://images.unsplash.com/photo-1557804506-669a67965ba0?w=800&h=500&fit=crop", title: "Skill Building Workshop", location: "Medellín, Colombia" },
     { id: 5, src: photo5, fallback: "https://images.unsplash.com/photo-1529333166437-7750a6dd5a70?w=800&h=500&fit=crop", title: "Beach Coworking Day", location: "Chiang Mai, Thailand" }
   ];
-
-  const handleImageError = (id) => {
-    setImageErrors(prev => ({ ...prev, [id]: true }));
-  };
 
   const getImageSrc = (img) => {
     if (imageErrors[img.id]) {
@@ -207,10 +383,11 @@ export default function Home() {
       });
     }, { threshold: 0.1 });
     
-    document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+    const revealElements = document.querySelectorAll('.reveal');
+    revealElements.forEach(el => observer.observe(el));
     
     const handleMouseLeave = (e) => {
-      if (e.clientY < 0 && !hasShownExitPopup) {
+      if (e.clientY < 0 && !hasShownExitPopup && !showExitPopup) {
         setShowExitPopup(true);
         setHasShownExitPopup(true);
       }
@@ -221,7 +398,7 @@ export default function Home() {
       observer.disconnect();
       document.removeEventListener('mouseleave', handleMouseLeave);
     };
-  }, [hasShownExitPopup]);
+  }, [hasShownExitPopup, showExitPopup]);
 
   // --- HANDLERS ---
   const handleOnboardingSelect = (key, value) => {
@@ -239,6 +416,8 @@ export default function Home() {
         setOnboardingStep(4);
         setShowConfetti(true);
         setTimeout(() => setShowConfetti(false), 5000);
+        // Show user type popup after onboarding completion
+        setTimeout(() => setShowUserTypePopup(true), 1000);
       }
     }, 400);
   };
@@ -246,6 +425,27 @@ export default function Home() {
   const resetOnboarding = () => {
     setOnboardingStep(1);
     setOnboardingData({ pull: '', level: '', speed: '' });
+  };
+
+  const handleUserTypeSelect = (type, action) => {
+    setShowUserTypePopup(false);
+    if (action === 'start') {
+      // Use setActiveTab to navigate to sevendays page
+      if (setActiveTab) {
+        setActiveTab('sevendays');
+      }
+    }
+  };
+
+  const handleCloseUserTypePopup = () => {
+    setShowUserTypePopup(false);
+  };
+
+  // Function to navigate to sevendays page
+  const goToSevendays = () => {
+    if (setActiveTab) {
+      setActiveTab('sevendays');
+    }
   };
 
   const nextSlide = () => {
@@ -270,6 +470,17 @@ export default function Home() {
     setIsAutoPlaying(!isAutoPlaying);
   };
 
+  const handleVideoPlay = () => {
+    alert("Video player would open here");
+  };
+
+  const scrollToOnboarding = () => {
+    const element = document.getElementById('onboarding');
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   // --- MOCK DATA ---
   const testimonials = [
     { name: "Sarah Johnson", role: "Former Accountant", before: "Burned out in cubicle", after: "Living in Bali, $8k/mo", quote: "Nomads Advisors didn't just give me a course, they gave me a completely new trajectory for my life. Best decision I ever made!" },
@@ -278,9 +489,17 @@ export default function Home() {
   ];
 
   return (
-    <div className="relative min-h-screen ml-[280px]">
+    <div className="relative min-h-screen md:ml-[280px]">
       <CustomStyles />
       {showConfetti && <Confetti />}
+
+      {/* User Type Selection Popup */}
+      {showUserTypePopup && (
+        <UserTypePopup 
+          onSelect={handleUserTypeSelect}
+          onClose={handleCloseUserTypePopup}
+        />
+      )}
 
       {/* FLOATING GAMIFICATION TOAST */}
       <div className={`fixed top-24 right-4 md:right-8 z-50 transition-all duration-500 transform ${gamificationToast ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'}`}>
@@ -293,7 +512,7 @@ export default function Home() {
       {/* EXIT INTENT POPUP */}
       {showExitPopup && (
         <div className="fixed inset-0 z-[100] bg-tiber/90 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setShowExitPopup(false)}>
-          <div className="bg-white rounded-3xl max-w-lg w-full p-8 relative shadow-2xl animate-scale-in" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-3xl max-w-lg w-full p-8 relative shadow-2xl" onClick={e => e.stopPropagation()}>
             <button onClick={() => setShowExitPopup(false)} className="absolute top-4 right-4 text-gray-400 hover:text-tiber transition-colors">
               <X className="w-6 h-6" />
             </button>
@@ -327,10 +546,10 @@ export default function Home() {
             Break the 9-5 cycle. Build location-independent income. Join a global community of modern explorers redesigning their lives.
           </p>
           <div className="flex flex-col sm:flex-row gap-4">
-            <button onClick={() => document.getElementById('onboarding').scrollIntoView({behavior:'smooth'})} className="bg-downy btn-glow text-tiber font-sora font-bold text-lg px-8 py-4 rounded-xl flex items-center justify-center gap-2 transition-all hover:scale-105 shadow-lg">
+            <button onClick={scrollToOnboarding} className="bg-downy btn-glow text-tiber font-sora font-bold text-lg px-8 py-4 rounded-xl flex items-center justify-center gap-2 transition-all hover:scale-105 shadow-lg">
               Start Your Journey <ArrowRight className="w-5 h-5" />
             </button>
-            <button className="bg-transparent border-2 border-tiber text-tiber hover:bg-tiber hover:text-white font-sora font-bold text-lg px-8 py-4 rounded-xl flex items-center justify-center gap-2 transition-all hover:scale-105">
+            <button onClick={handleVideoPlay} className="bg-transparent border-2 border-tiber text-tiber hover:bg-tiber hover:text-white font-sora font-bold text-lg px-8 py-4 rounded-xl flex items-center justify-center gap-2 transition-all hover:scale-105">
               <Play className="w-5 h-5" /> Watch Video
             </button>
           </div>
@@ -342,7 +561,12 @@ export default function Home() {
         
         <div className="md:col-span-6 relative reveal animate-float">
           <div className="absolute inset-0 bg-gradient-to-tr from-tiber/20 to-downy/20 rounded-[32px] z-10"></div>
-          <img src="https://images.unsplash.com/photo-1552733407-5d5c46c3bb3b?w=800&q=80" alt="Nomad Lifestyle" className="rounded-[32px] w-full h-[500px] object-cover shadow-2xl border-4 border-white/70" />
+          <img 
+            src="https://images.unsplash.com/photo-1552733407-5d5c46c3bb3b?w=800&q=80" 
+            alt="Nomad Lifestyle" 
+            className="rounded-[32px] w-full h-[500px] object-cover shadow-2xl border-4 border-white/70"
+            loading="lazy"
+          />
           
           <div className="absolute -bottom-6 -left-6 z-20 glass-card p-4 rounded-xl shadow-2xl flex items-center gap-4 animate-bounce" style={{animationDuration: '4s'}}>
             <div className="bg-downy/20 p-2 rounded-full">
@@ -382,7 +606,7 @@ export default function Home() {
                 <h3 className="font-sora text-2xl font-bold mb-6 text-center">What's pulling you towards change?</h3>
                 <div className="grid sm:grid-cols-3 gap-4">
                   {[
-                    { id: 'escape', icon: Briefcase, title: 'Escape 9–5', desc: 'Break the corporate chains', color: '#0A3948' },
+                    { id: 'escape', icon: BriefcaseIcon, title: 'Escape 9–5', desc: 'Break the corporate chains', color: '#0A3948' },
                     { id: 'income', icon: DollarSign, title: 'Build Income', desc: 'Create financial freedom', color: '#5794A4' },
                     { id: 'travel', icon: Globe, title: 'Travel Lifestyle', desc: 'Work from anywhere', color: '#64CDD1' }
                   ].map(item => (
@@ -421,14 +645,32 @@ export default function Home() {
                 <h3 className="font-sora text-2xl font-bold mb-6 text-center">How fast do you want to transform?</h3>
                 <div className="grid sm:grid-cols-3 gap-4">
                   {[
-                    { id: '7', title: '7 Days', badge: 'Clarity Seeker', color: '#64CDD1' },
-                    { id: '30', title: '30 Days', badge: 'Income Builder', color: '#5794A4' },
-                    { id: '60', title: '60 Days', badge: 'Nomad Starter', color: '#0A3948' }
+                    { id: '7', title: '7 Days', badge: 'Clarity Seeker', color: '#64CDD1', available: true },
+                    { id: '30', title: '30 Days', badge: 'Income Builder', color: '#5794A4', available: false, locked: true },
+                    { id: '60', title: '60 Days', badge: 'Nomad Starter', color: '#0A3948', available: false, locked: true }
                   ].map(item => (
-                    <button key={item.id} onClick={() => handleOnboardingSelect('speed', item.id)} className={`p-6 rounded-2xl border-2 text-center transition-all hover-lift relative overflow-hidden ${onboardingData.speed === item.id ? 'border-downy shadow-xl scale-105' : 'border-gray-100 bg-white/80 hover:bg-white'}`} style={{ background: onboardingData.speed === item.id ? item.color : 'transparent' }}>
+                    <button 
+                      key={item.id} 
+                      onClick={() => item.available && handleOnboardingSelect('speed', item.id)} 
+                      className={`p-6 rounded-2xl border-2 text-center transition-all hover-lift relative overflow-hidden ${onboardingData.speed === item.id ? 'border-downy shadow-xl scale-105' : 'border-gray-100 bg-white/80'} ${!item.available ? 'cursor-not-allowed opacity-60' : 'hover:bg-white'}`} 
+                      style={{ background: onboardingData.speed === item.id ? item.color : 'transparent' }}
+                      disabled={!item.available}
+                    >
+                      {item.locked && (
+                        <div className="absolute top-2 right-2">
+                          <LockIcon size={16} className="text-gray-400" />
+                        </div>
+                      )}
                       {onboardingData.speed === item.id && <div className="absolute inset-0 bg-white/10 animate-pulse"></div>}
-                      <span className={`text-xs font-bold uppercase tracking-wider mb-2 block ${onboardingData.speed === item.id ? 'text-white' : 'text-horizon'}`}>{item.badge}</span>
-                      <h4 className="font-sora text-2xl font-bold" style={{ color: onboardingData.speed === item.id ? 'white' : item.color }}>{item.title}</h4>
+                      <span className={`text-xs font-bold uppercase tracking-wider mb-2 block ${onboardingData.speed === item.id ? 'text-white' : 'text-horizon'}`}>
+                        {item.badge}
+                      </span>
+                      <h4 className="font-sora text-2xl font-bold" style={{ color: onboardingData.speed === item.id ? 'white' : item.color }}>
+                        {item.title}
+                      </h4>
+                      {!item.available && (
+                        <span className="text-xs text-gray-400 mt-2 block">Complete 7-Day Challenge to Unlock</span>
+                      )}
                     </button>
                   ))}
                 </div>
@@ -446,27 +688,27 @@ export default function Home() {
                 <div className="bg-gradient-to-r from-tiber/5 to-downy/5 rounded-2xl p-6 border border-downy/30 shadow-xl mb-8 text-left flex items-start gap-4">
                   <div className="bg-white p-3 rounded-xl shadow-md"><Compass className="w-8 h-8 text-downy" /></div>
                   <div>
-                    <h4 className="font-sora font-bold text-xl mb-1">{onboardingData.speed === '7' ? 'The Clarity Blueprint' : onboardingData.speed === '30' ? 'The 30-Day Income Engine' : 'The Full Nomad Transition'}</h4>
+                    <h4 className="font-sora font-bold text-xl mb-1">{onboardingData.speed === '7' ? 'The Clarity Blueprint' : 'Your Custom Path'}</h4>
                     <p className="font-inter text-sm text-tiber/70 mb-3">Tailored for {onboardingData.level}s looking to {onboardingData.pull === 'escape' ? 'quit their jobs' : onboardingData.pull === 'income' ? 'scale their income' : 'travel the world'}.</p>
                     <ul className="space-y-2"><li className="flex items-center gap-2 text-sm font-inter"><CheckCircle className="w-4 h-4 text-downy"/> Step-by-step action plan</li><li className="flex items-center gap-2 text-sm font-inter"><CheckCircle className="w-4 h-4 text-downy"/> 1-on-1 advisor matching</li><li className="flex items-center gap-2 text-sm font-inter"><CheckCircle className="w-4 h-4 text-downy"/> Community access</li></ul>
                   </div>
                 </div>
 
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
-  <button
-    onClick={() => navigate("/sevendays")}
-    className="bg-tiber text-white font-sora font-bold px-8 py-4 rounded-xl flex justify-center items-center gap-2 hover:bg-downy transition-all btn-glow"
-  >
-    Start My Challenge <Rocket className="w-5 h-5" />
-  </button>
+                  <button
+                    onClick={goToSevendays}
+                    className="bg-tiber text-white font-sora font-bold px-8 py-4 rounded-xl flex justify-center items-center gap-2 hover:bg-downy transition-all btn-glow"
+                  >
+                    Start My Challenge <Rocket className="w-5 h-5" />
+                  </button>
 
-  <button
-    onClick={resetOnboarding}
-    className="text-tiber/60 font-inter text-sm underline hover:text-tiber"
-  >
-    Retake Quiz
-  </button>
-</div>
+                  <button
+                    onClick={resetOnboarding}
+                    className="text-tiber/60 font-inter text-sm underline hover:text-tiber"
+                  >
+                    Retake Quiz
+                  </button>
+                </div>
               </div>
             )}
           </div>
@@ -482,11 +724,16 @@ export default function Home() {
 
         <div className="grid md:grid-cols-3 gap-8">
           {[
-            { title: 'Nomad Starter Kit', duration: '7 Days', desc: 'Find your profitable skill and map your exit strategy.', outcome: 'Crystal clear clarity.', icon: MapPin, color: '#64CDD1' },
-            { title: 'Income Engine', duration: '30 Days', desc: 'Land your first online client or launch your digital product.', outcome: 'First $1k online.', icon: DollarSign, color: '#5794A4' },
-            { title: 'Freedom Mastermind', duration: '60 Days', desc: 'Scale to consistent 5k/mo and optimize taxes & travel.', outcome: 'Full independence.', icon: Globe, color: '#0A3948' }
+            { title: 'Nomad Starter Kit', duration: '7 Days', desc: 'Find your profitable skill and map your exit strategy.', outcome: 'Crystal clear clarity.', icon: MapPin, color: '#64CDD1', locked: false, link: 'sevendays' },
+            { title: 'Income Engine', duration: '30 Days', desc: 'Land your first online client or launch your digital product.', outcome: 'First $1k online.', icon: DollarSign, color: '#5794A4', locked: true, message: 'Complete 7-Day Challenge first' },
+            { title: 'Freedom Mastermind', duration: '60 Days', desc: 'Scale to consistent 5k/mo and optimize taxes & travel.', outcome: 'Full independence.', icon: Globe, color: '#0A3948', locked: true, message: 'Complete 7-Day Challenge first' }
           ].map((prog, i) => (
-            <div key={i} className="glass-card p-8 rounded-2xl hover-lift reveal transition-all hover:shadow-2xl" style={{transitionDelay: `${i * 100}ms`}}>
+            <div key={i} className="glass-card p-8 rounded-2xl hover-lift reveal transition-all hover:shadow-2xl relative" style={{transitionDelay: `${i * 100}ms`}}>
+              {prog.locked && (
+                <div className="absolute top-4 right-4">
+                  <LockIcon size={20} className="text-gray-400" />
+                </div>
+              )}
               <div className="w-16 h-16 rounded-xl flex items-center justify-center mb-6" style={{ background: `${prog.color}15` }}>
                 <prog.icon className="w-8 h-8" style={{ color: prog.color }} />
               </div>
@@ -497,7 +744,14 @@ export default function Home() {
                 <span className="font-inter text-sm font-bold block mb-1">Outcome:</span>
                 <span className="font-sora text-tiber font-semibold">{prog.outcome}</span>
               </div>
-              <button className="w-full border-2 border-tiber text-tiber font-sora font-bold py-3 rounded-xl hover:bg-tiber hover:text-white transition-all">View Program</button>
+              <button 
+                className={`w-full border-2 border-tiber font-sora font-bold py-3 rounded-xl transition-all ${prog.locked ? 'opacity-50 cursor-not-allowed' : 'hover:bg-tiber hover:text-white'}`}
+                style={{ color: prog.locked ? '#94a3b8' : 'var(--tiber)' }}
+                onClick={() => !prog.locked && setActiveTab && setActiveTab(prog.link)}
+                disabled={prog.locked}
+              >
+                {prog.locked ? `🔒 ${prog.message}` : 'View Program'}
+              </button>
             </div>
           ))}
         </div>
@@ -513,7 +767,7 @@ export default function Home() {
             <div className="w-px h-24 bg-gradient-to-b from-white/30 to-transparent ml-6 reveal"></div>
             <div className="reveal my-16 pl-12 border-l border-horizon/40 relative"><div className="absolute -left-[17px] top-0 w-8 h-8 rounded-full bg-horizon flex items-center justify-center"><Shield className="w-4 h-4 text-tiber" /></div><span className="text-downy font-inter font-bold tracking-wider uppercase text-sm mb-4 block">The Guide</span><h3 className="font-sora text-3xl font-bold mb-4">Enter Nomads Advisors.</h3><p className="font-inter text-white/80">We're a collective of people who already broke the matrix. We don't just sell courses; we build personalized bridges from your current reality to true location independence.</p></div>
             <div className="w-px h-24 bg-gradient-to-b from-white/30 to-transparent ml-6 reveal"></div>
-            <div className="reveal mt-16 pl-12 border-l border-downy/40 relative"><div className="absolute -left-[17px] top-0 w-8 h-8 rounded-full bg-downy flex items-center justify-center"><Zap className="w-4 h-4 text-tiber" /></div><span className="text-downy font-inter font-bold tracking-wider uppercase text-sm mb-4 block">The Vision</span><h3 className="font-sora text-3xl font-bold mb-4">Imagine waking up anywhere.</h3><p className="font-inter text-white/80 mb-8">Your laptop is your office. Your schedule is your own. You dictate your income, not a boss. This isn't a pipe dream—it's a structured, achievable reality.</p><button onClick={() => document.getElementById('onboarding').scrollIntoView({behavior:'smooth'})} className="bg-downy text-tiber font-sora font-bold px-8 py-4 rounded-xl hover:bg-white transition-all hover:scale-105">Claim Your Freedom</button></div>
+            <div className="reveal mt-16 pl-12 border-l border-downy/40 relative"><div className="absolute -left-[17px] top-0 w-8 h-8 rounded-full bg-downy flex items-center justify-center"><Zap className="w-4 h-4 text-tiber" /></div><span className="text-downy font-inter font-bold tracking-wider uppercase text-sm mb-4 block">The Vision</span><h3 className="font-sora text-3xl font-bold mb-4">Imagine waking up anywhere.</h3><p className="font-inter text-white/80 mb-8">Your laptop is your office. Your schedule is your own. You dictate your income, not a boss. This isn't a pipe dream—it's a structured, achievable reality.</p><button onClick={scrollToOnboarding} className="bg-downy text-tiber font-sora font-bold px-8 py-4 rounded-xl hover:bg-white transition-all hover:scale-105">Claim Your Freedom</button></div>
           </div>
         </div>
       </section>
@@ -616,14 +870,10 @@ export default function Home() {
                   {communityImages.map((img) => (
                     <div key={img.id} className="w-full flex-shrink-0 relative">
                       <img 
-                        src={img.src} 
+                        src={getImageSrc(img)} 
                         alt={img.title} 
                         className="w-full h-[450px] object-cover rounded-2xl"
-                        onError={(e) => {
-                          console.log(`Failed to load image ${img.id}, using fallback`);
-                          e.target.onerror = null;
-                          e.target.src = img.fallback;
-                        }}
+                        onError={() => setImageErrors(prev => ({ ...prev, [img.id]: true }))}
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent rounded-2xl">
                         <div className="absolute bottom-0 left-0 right-0 p-8">
@@ -663,7 +913,7 @@ export default function Home() {
           <h2 className="font-sora text-5xl md:text-6xl font-extrabold text-white mb-8 leading-tight">A year from now, you'll wish you started <span className="text-downy">today.</span></h2>
           <p className="font-inter text-xl text-white/80 mb-12 max-w-2xl mx-auto">The time will pass anyway. You can either be sitting in the same chair, or sitting on a beach designing your own day.</p>
           <div className="flex flex-col sm:flex-row gap-6 justify-center">
-            <button onClick={() => document.getElementById('onboarding').scrollIntoView({behavior:'smooth'})} className="bg-downy text-tiber font-sora text-xl font-bold px-10 py-5 rounded-2xl shadow-2xl hover:bg-white transition-all transform hover:-translate-y-1 btn-glow flex items-center justify-center gap-2">Start Your Journey <ArrowRight className="w-6 h-6" /></button>
+            <button onClick={scrollToOnboarding} className="bg-downy text-tiber font-sora text-xl font-bold px-10 py-5 rounded-2xl shadow-2xl hover:bg-white transition-all transform hover:-translate-y-1 btn-glow flex items-center justify-center gap-2">Start Your Journey <ArrowRight className="w-6 h-6" /></button>
           </div>
           <p className="mt-8 font-inter text-sm text-white/60 flex items-center justify-center gap-2"><Shield className="w-4 h-4" /> 14-Day Money Back Guarantee • Cancel Anytime</p>
         </div>

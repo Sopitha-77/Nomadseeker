@@ -44,12 +44,12 @@ function App() {
     <div className="min-h-screen bg-[#B8E3E6]">
       <Navbar activeTab={activeTab} setActiveTab={setActiveTab} user={user} onLogout={handleLogout} />
       <main>
-        {activeTab === 'home' && <Home />}
+        {activeTab === 'home' && <Home setActiveTab={setActiveTab} />}
         {activeTab === 'about' && <AboutUs />}
         {activeTab === 'contact' && <ContactUs />}
         {activeTab === 'sevendays' && <Sevendays />}
-        {activeTab === 'thirty' && <Thirtyday />}
-        {activeTab === 'sixty' && <Sixtyday/>}
+        {activeTab === 'thirty' && <ThirtyDay />}
+        {activeTab === 'sixty' && <SixtyDay />}
       </main>
     </div>
   );
