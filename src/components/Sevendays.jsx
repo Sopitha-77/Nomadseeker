@@ -1,757 +1,1384 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   BookOpen, CheckCircle, Lock, Target, TrendingUp, Zap,
   ArrowRight, ArrowLeft, Sparkles, Brain, Heart, Compass, Trophy,
   Award, Flame, Users, Calendar, Star, Rocket, ChevronRight,
-  Clock
+  Clock, Loader2, Download, Code, Briefcase, UserCheck,
+  Lightbulb, Quote, Gift, PartyPopper, Music, Camera, Palette,
+  Coffee, Plane, Globe, Smile, ThumbsUp, Crown
 } from 'lucide-react';
+import { useIkigai } from '../context/IkigaiContext';
+import { getQuestionsForCategory } from '../data/questions';
+import ProgressBar from '../components/ProgressBar';
+import QuestionCard from '../components/QuestionCard';
+import IkigaiChart from '../components/IkigaiChart';
 
 /* ══════════════════════════════════════════════
    BRAND PALETTE
-   Horizon   #5794A4   Secondary / Structure
-   Downy     #64CDD1   Accent / Action
-   Powder    #B8E3E6   Background / Soft UI
 ══════════════════════════════════════════════ */
 const C = {
   horizon: '#5794A4',
-  downy:   '#64CDD1',
-  powder:  '#B8E3E6',
-  white:   '#FFFFFF',
-  gray:    '#64748B',
+  downy: '#64CDD1',
+  powder: '#B8E3E6',
+  white: '#FFFFFF',
+  gray: '#64748B',
   lightGray: '#F1F5F9',
+  tiber: '#0A3948',
+  gold: '#F59E0B',
+  purple: '#8B5CF6',
+  pink: '#EC4899',
 };
 
-/* ── Gradient Background ── */
+/* ── Gradient Background with Particles ── */
 const GradientBg = () => (
   <div className="fixed inset-0 pointer-events-none z-0">
     <div className="absolute inset-0 bg-gradient-to-br from-[#B8E3E6] via-[#C4E8EB] to-[#DCF2F4]" />
-    <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-gradient-to-bl from-[#64CDD1]/15 to-transparent rounded-full blur-3xl" />
-    <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-gradient-to-tr from-[#5794A4]/10 to-transparent rounded-full blur-3xl" />
+    <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-gradient-to-bl from-[#64CDD1]/20 to-transparent rounded-full blur-3xl animate-pulse" />
+    <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-gradient-to-tr from-[#5794A4]/15 to-transparent rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] bg-[#64CDD1]/5 rounded-full blur-3xl" />
   </div>
 );
 
-/* ─── Answer-driven Ikigai Score Engine (Only after completion) ─── */
-const analyzeAnswers = (allDayAnswers) => {
-  const getText = (day) => {
-    const d = allDayAnswers[day];
-    if (!d?.answers) return '';
-    return d.answers.map(a => (a.answer||'').toLowerCase()).join(' ');
+/* ─── Floating Particles ─── */
+const FloatingParticles = () => (
+  <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+    {[...Array(20)].map((_, i) => (
+      <motion.div
+        key={i}
+        className="absolute rounded-full bg-white/20"
+        style={{
+          width: Math.random() * 4 + 2,
+          height: Math.random() * 4 + 2,
+          left: `${Math.random() * 100}%`,
+          top: `${Math.random() * 100}%`,
+        }}
+        animate={{
+          y: [0, -30, 0],
+          x: [0, Math.random() * 20 - 10, 0],
+          opacity: [0, 0.5, 0],
+        }}
+        transition={{
+          duration: Math.random() * 5 + 3,
+          repeat: Infinity,
+          delay: Math.random() * 5,
+        }}
+      />
+    ))}
+  </div>
+);
+
+/* ─── Fallback Questions Generator ─── */
+const getFallbackQuestions = (category, day) => {
+  // Ensure day is between 1-6
+  const safeDay = Math.min(Math.max(day, 1), 6);
+  
+  const fallbackQuestions = {
+    1: {
+      title: "What You Love",
+      type: "love",
+      questions: [
+        {
+          id: `fallback_${category}_1_1`,
+          text: "What activities make you feel most energized and alive?",
+          description: "Discover what truly brings you joy",
+          options: [
+            { value: "A", text: "Creating or building something new" },
+            { value: "B", text: "Helping others solve their problems" },
+            { value: "C", text: "Learning and mastering new skills" },
+            { value: "D", text: "Leading and inspiring teams" },
+            { value: "E", text: "Analyzing data and finding patterns" },
+            { value: "F", text: "Designing beautiful experiences" },
+            { value: "G", text: "Teaching and sharing knowledge" },
+            { value: "H", text: "Organizing and optimizing systems" }
+          ]
+        },
+        {
+          id: `fallback_${category}_1_2`,
+          text: "What could you spend hours doing without getting tired?",
+          description: "Identify your natural interests",
+          options: [
+            { value: "A", text: "Solving complex problems" },
+            { value: "B", text: "Building things with my hands" },
+            { value: "C", text: "Reading and researching" },
+            { value: "D", text: "Brainstorming new ideas" },
+            { value: "E", text: "Collaborating with others" },
+            { value: "F", text: "Working on detailed tasks" },
+            { value: "G", text: "Planning and strategizing" },
+            { value: "H", text: "Creating content or art" }
+          ]
+        },
+        {
+          id: `fallback_${category}_1_3`,
+          text: "What kind of problems do you enjoy solving?",
+          description: "Find your problem-solving passion",
+          options: [
+            { value: "A", text: "Technical and mechanical issues" },
+            { value: "B", text: "Business and strategy challenges" },
+            { value: "C", text: "People and relationship matters" },
+            { value: "D", text: "Creative and design problems" },
+            { value: "E", text: "Organizational and efficiency issues" },
+            { value: "F", text: "Educational and learning challenges" },
+            { value: "G", text: "Social and community problems" },
+            { value: "H", text: "Personal growth and development" }
+          ]
+        }
+      ]
+    },
+    2: {
+      title: "What You Are Good At",
+      type: "good",
+      questions: [
+        {
+          id: `fallback_${category}_2_1`,
+          text: "What skill do people often compliment you on?",
+          description: "Recognize your natural strengths",
+          options: [
+            { value: "A", text: "Problem-solving and critical thinking" },
+            { value: "B", text: "Communication and presentation" },
+            { value: "C", text: "Technical or analytical skills" },
+            { value: "D", text: "Leadership and management" },
+            { value: "E", text: "Creativity and innovation" },
+            { value: "F", text: "Organization and planning" },
+            { value: "G", text: "Empathy and understanding others" },
+            { value: "H", text: "Attention to detail" }
+          ]
+        },
+        {
+          id: `fallback_${category}_2_2`,
+          text: "What task do you find easier than most people?",
+          description: "Identify your unique abilities",
+          options: [
+            { value: "A", text: "Learning new software or tools" },
+            { value: "B", text: "Understanding complex concepts" },
+            { value: "C", text: "Making decisions quickly" },
+            { value: "D", text: "Staying organized" },
+            { value: "E", text: "Coming up with creative ideas" },
+            { value: "F", text: "Connecting with people" },
+            { value: "G", text: "Fixing broken things" },
+            { value: "H", text: "Seeing the big picture" }
+          ]
+        },
+        {
+          id: `fallback_${category}_2_3`,
+          text: "What have you successfully taught others to do?",
+          description: "Skills you can transfer to others",
+          options: [
+            { value: "A", text: "Using technology or software" },
+            { value: "B", text: "Solving specific types of problems" },
+            { value: "C", text: "Improving their work processes" },
+            { value: "D", text: "Communicating more effectively" },
+            { value: "E", text: "Managing their time better" },
+            { value: "F", text: "Being more creative" },
+            { value: "G", text: "Working well with others" },
+            { value: "H", text: "Achieving their goals" }
+          ]
+        }
+      ]
+    },
+    3: {
+      title: "What You Can Be Paid For",
+      type: "paid",
+      questions: [
+        {
+          id: `fallback_${category}_3_1`,
+          text: "What services could you offer that people would pay for?",
+          description: "Identify marketable skills",
+          options: [
+            { value: "A", text: "Technical consulting or development" },
+            { value: "B", text: "Business strategy and planning" },
+            { value: "C", text: "Creative design or content creation" },
+            { value: "D", text: "Coaching or mentoring" },
+            { value: "E", text: "Project management" },
+            { value: "F", text: "Data analysis and insights" },
+            { value: "G", text: "Training and education" },
+            { value: "H", text: "Process optimization" }
+          ]
+        },
+        {
+          id: `fallback_${category}_3_2`,
+          text: "What problems in your industry need solving?",
+          description: "Find opportunities for value creation",
+          options: [
+            { value: "A", text: "Inefficient workflows and processes" },
+            { value: "B", text: "Lack of technical expertise" },
+            { value: "C", text: "Poor customer experiences" },
+            { value: "D", text: "Communication gaps" },
+            { value: "E", text: "Outdated tools or systems" },
+            { value: "F", text: "Skill gaps in teams" },
+            { value: "G", text: "Missed market opportunities" },
+            { value: "H", text: "Ineffective marketing" }
+          ]
+        },
+        {
+          id: `fallback_${category}_3_3`,
+          text: "What value can you create that others would appreciate?",
+          description: "Define your value proposition",
+          options: [
+            { value: "A", text: "Saving time and increasing efficiency" },
+            { value: "B", text: "Reducing costs and waste" },
+            { value: "C", text: "Increasing revenue or sales" },
+            { value: "D", text: "Improving quality or outcomes" },
+            { value: "E", text: "Reducing risk or uncertainty" },
+            { value: "F", text: "Enhancing user experience" },
+            { value: "G", text: "Providing knowledge or expertise" },
+            { value: "H", text: "Building community or connections" }
+          ]
+        }
+      ]
+    },
+    4: {
+      title: "What The World Needs",
+      type: "need",
+      questions: [
+        {
+          id: `fallback_${category}_4_1`,
+          text: "What global or local issue concerns you most?",
+          description: "Connect with meaningful causes",
+          options: [
+            { value: "A", text: "Environmental sustainability" },
+            { value: "B", text: "Education and skill development" },
+            { value: "C", text: "Healthcare and wellness" },
+            { value: "D", text: "Economic inequality" },
+            { value: "E", text: "Mental health awareness" },
+            { value: "F", text: "Technology access" },
+            { value: "G", text: "Community development" },
+            { value: "H", text: "Work-life balance" }
+          ]
+        },
+        {
+          id: `fallback_${category}_4_2`,
+          text: "How could your skills help improve society?",
+          description: "Apply your abilities for greater good",
+          options: [
+            { value: "A", text: "Creating educational resources" },
+            { value: "B", text: "Building helpful technology" },
+            { value: "C", text: "Mentoring and teaching others" },
+            { value: "D", text: "Improving business practices" },
+            { value: "E", text: "Supporting non-profits" },
+            { value: "F", text: "Creating sustainable solutions" },
+            { value: "G", text: "Building community programs" },
+            { value: "H", text: "Advocating for change" }
+          ]
+        },
+        {
+          id: `fallback_${category}_4_3`,
+          text: "What positive change do you want to create?",
+          description: "Define your desired impact",
+          options: [
+            { value: "A", text: "Empower people with knowledge" },
+            { value: "B", text: "Create equal opportunities" },
+            { value: "C", text: "Protect the environment" },
+            { value: "D", text: "Improve mental wellbeing" },
+            { value: "E", text: "Build stronger communities" },
+            { value: "F", text: "Advance technology for good" },
+            { value: "G", text: "Promote sustainable business" },
+            { value: "H", text: "Foster creativity and innovation" }
+          ]
+        }
+      ]
+    },
+    5: {
+      title: "Your Passion in Action",
+      type: "love",
+      questions: [
+        {
+          id: `fallback_${category}_5_1`,
+          text: "How does your passion show up in your daily life?",
+          description: "Express your passion through action",
+          options: [
+            { value: "A", text: "I naturally spend hours thinking about my interests" },
+            { value: "B", text: "I get excited when discussing topics I care about" },
+            { value: "C", text: "I actively seek opportunities to pursue my passions" },
+            { value: "D", text: "I feel energized after engaging with my interests" },
+            { value: "E", text: "I lose track of time when doing what I love" },
+            { value: "F", text: "I constantly learn more about my passion areas" },
+            { value: "G", text: "I enjoy sharing my passion with others" },
+            { value: "H", text: "I look for ways to turn passion into action" }
+          ]
+        },
+        {
+          id: `fallback_${category}_5_2`,
+          text: "What would you do if you had unlimited resources?",
+          description: "Dream without constraints",
+          options: [
+            { value: "A", text: "Build something that helps many people" },
+            { value: "B", text: "Create innovative solutions to big problems" },
+            { value: "C", text: "Travel and learn from different cultures" },
+            { value: "D", text: "Start a business around my passion" },
+            { value: "E", text: "Teach and mentor others" },
+            { value: "F", text: "Create art, music, or content" },
+            { value: "G", text: "Solve environmental or social issues" },
+            { value: "H", text: "Build communities and bring people together" }
+          ]
+        }
+      ]
+    },
+    6: {
+      title: "Your Mission & Purpose",
+      type: "mission",
+      questions: [
+        {
+          id: `fallback_${category}_6_1`,
+          text: "What problem do you feel called to solve?",
+          description: "Identify your mission",
+          options: [
+            { value: "A", text: "Lack of opportunities for talented people" },
+            { value: "B", text: "People feeling stuck or unfulfilled" },
+            { value: "C", text: "Inefficiency in how things work" },
+            { value: "D", text: "Lack of access to knowledge or tools" },
+            { value: "E", text: "Environmental or sustainability issues" },
+            { value: "F", text: "Mental health and well-being" },
+            { value: "G", text: "Education and skill development" },
+            { value: "H", text: "Community building and connection" }
+          ]
+        },
+        {
+          id: `fallback_${category}_6_2`,
+          text: "What legacy do you want to leave?",
+          description: "Define your long-term purpose",
+          options: [
+            { value: "A", text: "Empowered others to find their path" },
+            { value: "B", text: "Built something that changed lives" },
+            { value: "C", text: "Created systems that keep helping people" },
+            { value: "D", text: "Inspired a movement or community" },
+            { value: "E", text: "Solved a problem that affected millions" },
+            { value: "F", text: "Made knowledge and tools accessible" },
+            { value: "G", text: "Showed what's possible through example" },
+            { value: "H", text: "Brought people together around purpose" }
+          ]
+        }
+      ]
+    }
   };
-
-  const score = (text, words, base, range) => {
-    const hits = words.filter(w => text.includes(w)).length;
-    return Math.min(98, base + Math.round((hits/words.length)*range));
-  };
-
-  const d1=getText(1), d2=getText(2), d3=getText(3);
-  const d4=getText(4), d5=getText(5), d6=getText(6), d7=getText(7);
-
-  const passion = score(d1+' '+d7,
-    ['love','passion','excite','joy','fun','happy','creative','art','music','write','read','build','design','play','learn','curious','dream','imagine'],
-    52, 46);
-  const vocation = score(d2+' '+d3,
-    ['skill','good at','expert','teach','help','build','code','manage','lead','analyze','create','communicate','organize','problem','solve','strength'],
-    48, 50);
-  const mission = score(d4+' '+d5,
-    ['world','need','impact','help','change','community','people','society','better','improve','contribute','support','serve','difference','mission','purpose'],
-    46, 52);
-  const profession = score(d6+' '+d7,
-    ['paid','income','money','business','service','client','consulting','freelance','product','revenue','charge','fee','sell','offer','market','earn'],
-    44, 54);
-
-  return { passion, vocation, mission, profession };
+  
+  return fallbackQuestions[safeDay] || fallbackQuestions[1];
 };
 
-/* ─── Ikigai Chart (Only shows data after all 7 days completed) ─── */
-const IkigaiChart = ({ allDayAnswers, completedDays, onChallenge }) => {
-  const allDone = completedDays.length === 7;
-  const analyzed = useMemo(() => allDone ? analyzeAnswers(allDayAnswers) : { passion:0, vocation:0, mission:0, profession:0 }, [allDayAnswers, allDone]);
+/* ─── Day Completion Celebration Modal ─── */
+const DayCompletionCelebration = ({ day, onClose }) => {
+  const dayMessages = {
+    1: {
+      title: "Day 1 Complete! 🎉",
+      subtitle: "You've taken the first step on your Ikigai journey!",
+      message: "You've discovered what truly makes you come alive. Your passion is the compass that will guide you forward.",
+      icon: <Heart className="w-12 h-12 text-pink-500" />,
+      color: "from-pink-500 to-rose-500",
+      fact: "People who know their passion are 3x more likely to feel fulfilled in their career!"
+    },
+    2: {
+      title: "Day 2 Complete! 🌟",
+      subtitle: "You're discovering your natural strengths!",
+      message: "Your unique talents are what set you apart. Recognizing them is the first step to leveraging them.",
+      icon: <Star className="w-12 h-12 text-yellow-500" />,
+      color: "from-blue-500 to-cyan-500",
+      fact: "Using your strengths daily can increase happiness by up to 73%!"
+    },
+    3: {
+      title: "Day 3 Complete! 💰",
+      subtitle: "Your skills are valuable assets!",
+      message: "You've identified how your abilities can create value. This is where passion meets profession.",
+      icon: <Target className="w-12 h-12 text-emerald-500" />,
+      color: "from-emerald-500 to-teal-500",
+      fact: "85% of people who align their skills with their passion report higher job satisfaction!"
+    },
+    4: {
+      title: "Day 4 Complete! 🌍",
+      subtitle: "You're finding your purpose in the world!",
+      message: "The problems you're passionate about solving are your mission. The world needs your unique contribution.",
+      icon: <Globe className="w-12 h-12 text-purple-500" />,
+      color: "from-purple-500 to-indigo-500",
+      fact: "People with a strong sense of purpose live up to 7 years longer on average!"
+    },
+    5: {
+      title: "Day 5 Complete! 🔥",
+      subtitle: "Your passion is transforming into action!",
+      message: "You're connecting your deepest passions to real-world impact. This is where magic happens.",
+      icon: <Flame className="w-12 h-12 text-orange-500" />,
+      color: "from-orange-500 to-amber-500",
+      fact: "Taking action on your passion releases dopamine, making you feel more energized!"
+    },
+    6: {
+      title: "Day 6 Complete! 🎯",
+      subtitle: "You've defined your mission and purpose!",
+      message: "Your Ikigai is coming together beautifully. Get ready to see your complete purpose map!",
+      icon: <Compass className="w-12 h-12 text-downy" />,
+      color: "from-downy to-horizon",
+      fact: "94% of people who discover their Ikigai report feeling more motivated in life!"
+    }
+  };
 
-  const passion    = analyzed.passion;
-  const vocation   = analyzed.vocation;
-  const mission    = analyzed.mission;
-  const profession = analyzed.profession;
-  const overall    = allDone ? Math.round((passion+vocation+mission+profession)/4) : 0;
-  const [hovered, setHovered] = useState(null);
+  const currentDayMessage = dayMessages[day] || dayMessages[1];
 
-  const circles = [
-    { id:'passion',    cx:155, cy:148, short:'Passion',    value:passion,    color:C.horizon },
-    { id:'vocation',   cx:245, cy:148, short:'Vocation',   value:vocation,   color:C.downy   },
-    { id:'mission',    cx:155, cy:222, short:'Mission',    value:mission,    color:C.horizon },
-    { id:'profession', cx:245, cy:222, short:'Profession', value:profession, color:C.downy   },
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      onClose();
+    }, 4000);
+    return () => clearTimeout(timer);
+  }, [onClose]);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-md"
+    >
+      <motion.div
+        initial={{ scale: 0.8, y: 50, opacity: 0 }}
+        animate={{ scale: 1, y: 0, opacity: 1 }}
+        exit={{ scale: 0.8, y: 50, opacity: 0 }}
+        transition={{ type: "spring", damping: 20, stiffness: 300 }}
+        className="bg-white rounded-3xl p-8 text-center max-w-md mx-4 shadow-2xl"
+      >
+        <motion.div
+          initial={{ scale: 0, rotate: -180 }}
+          animate={{ scale: 1, rotate: 0 }}
+          transition={{ type: "spring", delay: 0.2, stiffness: 200 }}
+          className={`w-24 h-24 rounded-full bg-gradient-to-r ${currentDayMessage.color} flex items-center justify-center mx-auto mb-4 shadow-lg`}
+        >
+          {currentDayMessage.icon}
+        </motion.div>
+
+        <motion.h3
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.3 }}
+          className="text-2xl font-bold text-tiber mb-2"
+        >
+          {currentDayMessage.title}
+        </motion.h3>
+
+        <motion.p
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.4 }}
+          className="text-sm font-medium text-downy mb-3"
+        >
+          {currentDayMessage.subtitle}
+        </motion.p>
+
+        <motion.p
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.5 }}
+          className="text-gray-600 text-sm mb-4 leading-relaxed"
+        >
+          {currentDayMessage.message}
+        </motion.p>
+
+        <motion.div
+          initial={{ scale: 0.9, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ delay: 0.6 }}
+          className="bg-gradient-to-r from-downy/10 to-horizon/10 rounded-xl p-3 mb-4"
+        >
+          <div className="flex items-center gap-2 justify-center">
+            <Lightbulb className="w-4 h-4 text-gold" />
+            <span className="text-xs text-gray-600">✨ Did you know?</span>
+          </div>
+          <p className="text-[11px] text-gray-500 mt-1">{currentDayMessage.fact}</p>
+        </motion.div>
+
+        {day < 6 && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.7 }}
+            className="flex items-center justify-center gap-2 text-xs text-gray-400"
+          >
+            <span>Moving to Day {day + 1}</span>
+            <motion.div
+              animate={{ x: [0, 5, 0] }}
+              transition={{ duration: 1, repeat: Infinity }}
+            >
+              <ArrowRight className="w-3 h-3" />
+            </motion.div>
+          </motion.div>
+        )}
+
+        <motion.div
+          initial={{ width: 0 }}
+          animate={{ width: "100%" }}
+          transition={{ delay: 0.8, duration: 0.5 }}
+          className="mt-4 h-1 bg-gray-100 rounded-full overflow-hidden"
+        >
+          <motion.div
+            className="h-full bg-gradient-to-r from-downy to-horizon rounded-full"
+            initial={{ width: 0 }}
+            animate={{ width: "100%" }}
+            transition={{ delay: 0.8, duration: 2 }}
+          />
+        </motion.div>
+      </motion.div>
+    </motion.div>
+  );
+};
+
+/* ─── Category Selection Modal ─── */
+const CategorySelectionModal = ({ onSelectCategory, isOpen, onClose }) => {
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [isConfirming, setIsConfirming] = useState(false);
+  const [hoveredCard, setHoveredCard] = useState(null);
+
+  const categories = [
+    {
+      id: 'entrepreneur',
+      title: 'Entrepreneur',
+      subtitle: 'Founder · Innovator · Builder',
+      description: 'Visionary leaders who build something new and create impact through innovation.',
+      longDescription: 'You see opportunities where others see problems. You dream big and have the drive to turn ideas into reality.',
+      icon: Rocket,
+      color: '#64CDD1',
+      gradient: 'from-[#64CDD1]/20 to-[#64CDD1]/5',
+      features: ['Startup Mindset', 'Product Innovation', 'Business Growth', 'Risk Taking'],
+      stats: { avgIncome: '$120k+', satisfaction: '94%', growth: '+156%' }
+    },
+    {
+      id: 'managerial',
+      title: 'Managerial',
+      subtitle: 'Marketing · Business Developer · Strategist',
+      description: 'Strategic thinkers who drive growth, optimize systems, and lead teams to success.',
+      longDescription: 'You excel at organizing people and resources. You see the big picture and know how to execute strategy.',
+      icon: TrendingUp,
+      color: '#5794A4',
+      gradient: 'from-[#5794A4]/20 to-[#5794A4]/5',
+      features: ['Team Leadership', 'Strategic Planning', 'Process Optimization', 'Client Relations'],
+      stats: { avgIncome: '$95k+', satisfaction: '89%', growth: '+98%' }
+    },
+    {
+      id: 'technician',
+      title: 'Technician',
+      subtitle: 'Developer · Creator · Specialist',
+      description: 'Hands-on experts who execute with precision and build technical solutions.',
+      longDescription: 'You love mastering your craft. You find joy in solving complex problems and building things that work.',
+      icon: Code,
+      color: '#0A3948',
+      gradient: 'from-[#0A3948]/20 to-[#0A3948]/5',
+      features: ['Technical Skills', 'Problem Solving', 'Building Solutions', 'Continuous Learning'],
+      stats: { avgIncome: '$110k+', satisfaction: '91%', growth: '+134%' }
+    }
   ];
 
-  return (
-    <div className="rounded-2xl overflow-hidden shadow-lg border bg-white"
-      style={{ borderColor:`${C.horizon}30` }}>
-
-      <div className="px-5 pt-5 pb-2 text-center">
-        <div className="flex items-center justify-center gap-2 mb-1">
-          <Compass size={16} style={{ color: C.horizon }}/>
-          <span className="text-sm font-bold tracking-wide" style={{ color: C.horizon }}>Your Ikigai Map</span>
-        </div>
-        <p className="text-xs" style={{ color: C.gray }}>
-          {allDone ? 'Based on your 7-day journey' : `Complete all 7 days to reveal your Ikigai (${completedDays.length}/7)`}
-        </p>
-      </div>
-
-      <div className="relative px-3 pt-2 pb-1">
-        <svg viewBox="0 0 400 370" className="w-full">
-          <defs>
-            {circles.map(c=>(
-              <radialGradient key={c.id} id={`vg-${c.id}`} cx="50%" cy="50%" r="50%">
-                <stop offset="0%"   stopColor={c.color} stopOpacity="0.35"/>
-                <stop offset="100%" stopColor={c.color} stopOpacity="0.05"/>
-              </radialGradient>
-            ))}
-          </defs>
-
-          {/* Circles */}
-          {circles.map(c=>(
-            <circle key={c.id} cx={c.cx} cy={c.cy} r="96"
-              fill={`url(#vg-${c.id})`}
-              stroke={c.color}
-              strokeWidth={hovered===c.id ? 2.5 : 1.5}
-              strokeOpacity={0.5}
-              style={{ transition:'all 0.2s', cursor:'pointer' }}
-              onMouseEnter={()=>setHovered(c.id)}
-              onMouseLeave={()=>setHovered(null)}
-            />
-          ))}
-
-          {/* Center */}
-          <circle cx="200" cy="185" r="52" fill="white" stroke={C.downy} strokeWidth="2" strokeOpacity="0.6"/>
-          <text x="200" y="175" textAnchor="middle" fontSize="9" fontWeight="600" fill={C.gray} letterSpacing="2">IKIGAI</text>
-          {allDone ? (
-            <>
-              <text x="200" y="197" textAnchor="middle" fontSize="22" fontWeight="800" fill={C.horizon}>{overall}%</text>
-              <text x="200" y="212" textAnchor="middle" fontSize="7" fill={C.gray}>alignment</text>
-            </>
-          ) : (
-            <text x="200" y="197" textAnchor="middle" fontSize="16" fontWeight="700" fill={C.gray} opacity="0.5">🔒</text>
-          )}
-
-          {/* Zone labels */}
-          <text x="200" y="108" textAnchor="middle" fontSize="7.5" fontWeight="600" fill={C.horizon}>Passion</text>
-          <text x="104" y="188" textAnchor="middle" fontSize="7.5" fontWeight="600" fill={C.horizon}>Mission</text>
-          <text x="296" y="188" textAnchor="middle" fontSize="7.5" fontWeight="600" fill={C.horizon}>Vocation</text>
-          <text x="200" y="263" textAnchor="middle" fontSize="7.5" fontWeight="600" fill={C.horizon}>Profession</text>
-
-          {/* Outer axis labels */}
-          <text x="110" y="41"  textAnchor="middle" fontSize="8" fontWeight="500" fill={C.gray}>What You Love</text>
-          <text x="290" y="41"  textAnchor="middle" fontSize="8" fontWeight="500" fill={C.gray}>What You're Good At</text>
-          <text x="80"  y="338" textAnchor="middle" fontSize="8" fontWeight="500" fill={C.gray}>World Needs</text>
-          <text x="320" y="338" textAnchor="middle" fontSize="8" fontWeight="500" fill={C.gray}>Paid For</text>
-
-          {/* Score badges - Only show after completion */}
-          {allDone && circles.map(c=>(
-            <g key={`b-${c.id}`}>
-              <circle cx={c.cx} cy={c.cy-62} r="18" fill={c.color} fillOpacity="0.2"/>
-              <text x={c.cx} y={c.cy-57} textAnchor="middle" fontSize="10" fontWeight="700" fill={c.color}>{c.value}%</text>
-            </g>
-          ))}
-        </svg>
-      </div>
-
-      <div className="px-5 pb-5">
-        <button 
-          onClick={onChallenge} 
-          disabled={!allDone}
-          className={`w-full py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 ${
-            allDone 
-              ? 'bg-[#5794A4] text-white hover:bg-[#64CDD1] hover:shadow-md' 
-              : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-          }`}
-        >
-          <Rocket size={15}/>
-          {allDone ? 'Start 30-Day Challenge' : `Complete ${7 - completedDays.length} more day${7 - completedDays.length !== 1 ? 's' : ''} to unlock`}
-          {allDone && <ChevronRight size={15}/>}
-        </button>
-      </div>
-    </div>
-  );
-};
-
-/* ─── Question Card ─── */
-const QuestionCard = ({ question, index, total, answer, onAnswer, onNext, onPrev, canGoNext, accent }) => {
-  const [slide, setSlide] = useState('');
-
-  const go = dir => {
-    setSlide(dir==='next' ? 'out-l' : 'out-r');
-    setTimeout(() => {
-      dir==='next' ? onNext() : onPrev();
-      setSlide(dir==='next' ? 'in-r' : 'in-l');
-      setTimeout(()=>setSlide(''), 200);
-    }, 150);
+  const handleSelect = (categoryId) => {
+    setSelectedCategory(categoryId);
   };
 
-  const getSlideStyles = () => {
-    switch(slide) {
-      case 'out-l': return { opacity:0, transform:'translateX(-15px)' };
-      case 'out-r': return { opacity:0, transform:'translateX(15px)' };
-      case 'in-r': return { opacity:0, transform:'translateX(15px)' };
-      case 'in-l': return { opacity:0, transform:'translateX(-15px)' };
-      default: return { opacity:1, transform:'translateX(0)' };
+  const handleConfirm = () => {
+    if (selectedCategory) {
+      setIsConfirming(true);
+      setTimeout(() => {
+        onSelectCategory(selectedCategory);
+        setIsConfirming(false);
+      }, 500);
     }
   };
 
+  if (!isOpen) return null;
+
   return (
-    <div style={{ transition:'all 0.15s ease', ...getSlideStyles() }}>
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex gap-1">
-          {Array.from({length:total}).map((_,i)=>(
-            <div key={i} className="rounded-full transition-all"
-              style={{ height:4, width:i===index?20:4, background:i<=index?accent:C.gray+'40' }}/>
-          ))}
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
+      <motion.div
+        initial={{ scale: 0.9, opacity: 0, y: 30 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        exit={{ scale: 0.9, opacity: 0, y: 30 }}
+        transition={{ type: "spring", damping: 25, stiffness: 300 }}
+        className="bg-white rounded-3xl max-w-5xl w-full max-h-[90vh] overflow-y-auto shadow-2xl"
+      >
+        <div className="sticky top-0 bg-white/95 backdrop-blur-sm border-b border-gray-100 px-6 py-5 rounded-t-3xl z-10">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-downy to-horizon flex items-center justify-center shadow-lg">
+                <Compass className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-tiber">Choose Your Path</h2>
+                <p className="text-sm text-gray-500">Select the role that best describes your professional journey</p>
+              </div>
+            </div>
+            <button
+              onClick={onClose}
+              className="p-2 rounded-full hover:bg-gray-100 transition-all duration-300 hover:scale-110"
+            >
+              <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
         </div>
-        <span className="text-[10px] font-semibold px-2 py-1 rounded-full bg-gray-100 text-gray-600">
-          {index+1}/{total}
-        </span>
-      </div>
 
-      <p className="text-sm font-medium mb-3 leading-relaxed text-gray-800">{question}</p>
+        <div className="p-6">
+          <div className="grid md:grid-cols-3 gap-5">
+            {categories.map((category) => {
+              const Icon = category.icon;
+              const isSelected = selectedCategory === category.id;
+              const isHovered = hoveredCard === category.id;
+              return (
+                <motion.button
+                  key={category.id}
+                  onMouseEnter={() => setHoveredCard(category.id)}
+                  onMouseLeave={() => setHoveredCard(null)}
+                  onClick={() => handleSelect(category.id)}
+                  className={`relative p-6 rounded-2xl text-left transition-all duration-300 ${
+                    isSelected
+                      ? 'ring-2 ring-downy shadow-xl scale-[1.02]'
+                      : 'hover:shadow-xl hover:scale-[1.01]'
+                  }`}
+                  style={{
+                    background: isSelected ? `linear-gradient(135deg, ${category.color}12, ${category.color}05)` : '#F8FAFC',
+                    border: `1px solid ${isSelected ? category.color : '#E2E8F0'}`
+                  }}
+                  whileHover={{ y: -4 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  {isHovered && (
+                    <motion.div
+                      className="absolute inset-0 rounded-2xl"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      style={{ background: `radial-gradient(circle at 50% 0%, ${category.color}20, transparent 70%)` }}
+                    />
+                  )}
 
-      <textarea
-        className="w-full p-3 rounded-xl text-sm resize-none leading-relaxed border focus:outline-none transition-all"
-        placeholder="Write your reflection here…"
-        value={answer}
-        onChange={e=>onAnswer(e.target.value)}
-        rows={3}
-        style={{ 
-          borderColor: answer?.trim() ? accent+'60' : '#E2E8F0',
-          background: '#FAFCFE',
-          minHeight: 90
-        }}
-        onFocus={e=>{ e.target.style.borderColor=accent; e.target.style.background='white'; }}
-        onBlur={e=>{ e.target.style.borderColor=answer?.trim()?accent+'60':'#E2E8F0'; e.target.style.background='#FAFCFE'; }}
-      />
+                  <div
+                    className="w-16 h-16 rounded-xl flex items-center justify-center mb-4 transition-all duration-300"
+                    style={{ 
+                      background: `${category.color}15`,
+                      transform: isHovered ? 'scale(1.05)' : 'scale(1)'
+                    }}
+                  >
+                    <Icon className="w-8 h-8" style={{ color: category.color }} />
+                  </div>
+                  
+                  <h3 className="font-bold text-xl mb-1" style={{ color: category.color }}>
+                    {category.title}
+                  </h3>
+                  <p className="text-xs text-gray-500 mb-2">{category.subtitle}</p>
+                  <p className="text-sm text-gray-600 mb-3">{category.description}</p>
+                  
+                  <div className="flex flex-wrap gap-1.5 mb-4">
+                    {category.features.map((feature, i) => (
+                      <span key={i} className="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">
+                        {feature}
+                      </span>
+                    ))}
+                  </div>
 
-      <div className="flex gap-2 mt-3">
-        <button onClick={()=>go('prev')} disabled={index===0}
-          className="flex-1 py-2 rounded-lg text-xs font-medium transition-all disabled:opacity-30 border"
-          style={{ borderColor:'#E2E8F0', color:C.gray, background:'white' }}>
-          <ArrowLeft size={12} className="inline mr-1"/> Back
-        </button>
-        <button onClick={()=>go('next')} disabled={!canGoNext}
-          className="flex-1 py-2 rounded-lg text-xs font-medium text-white transition-all"
-          style={{ background:canGoNext?`linear-gradient(135deg,${C.horizon},${C.downy})`:'#E2E8F0' }}>
-          Next <ArrowRight size={12} className="inline ml-1"/>
-        </button>
-      </div>
+                  <div className="flex justify-between pt-3 border-t border-gray-100">
+                    <div className="text-center">
+                      <p className="text-[10px] text-gray-400">Avg Income</p>
+                      <p className="text-xs font-semibold" style={{ color: category.color }}>{category.stats.avgIncome}</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-[10px] text-gray-400">Satisfaction</p>
+                      <p className="text-xs font-semibold" style={{ color: category.color }}>{category.stats.satisfaction}</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-[10px] text-gray-400">Growth</p>
+                      <p className="text-xs font-semibold" style={{ color: category.color }}>{category.stats.growth}</p>
+                    </div>
+                  </div>
+
+                  {isSelected && (
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      className="absolute top-3 right-3"
+                    >
+                      <CheckCircle className="w-5 h-5 text-downy" />
+                    </motion.div>
+                  )}
+                </motion.button>
+              );
+            })}
+          </div>
+
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.2 }}
+            className="mt-6 p-4 bg-gradient-to-r from-downy/5 to-horizon/5 rounded-xl text-center"
+          >
+            <Quote className="w-4 h-4 text-downy mx-auto mb-2" />
+            <p className="text-xs text-gray-500 italic">
+              "The only way to do great work is to love what you do. Choose the path that resonates with your soul."
+            </p>
+          </motion.div>
+
+          <div className="mt-6 flex gap-3">
+            <button
+              onClick={onClose}
+              className="flex-1 px-6 py-3 border-2 border-gray-200 text-gray-600 rounded-xl font-medium hover:bg-gray-50 transition-all duration-300 hover:scale-[1.02]"
+            >
+              Cancel
+            </button>
+            <motion.button
+              onClick={handleConfirm}
+              disabled={!selectedCategory || isConfirming}
+              className={`flex-1 px-6 py-3 rounded-xl font-semibold transition-all duration-300 flex items-center justify-center gap-2 ${
+                selectedCategory && !isConfirming
+                  ? 'bg-gradient-to-r from-horizon to-downy text-white hover:shadow-lg hover:scale-[1.02]'
+                  : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+              }`}
+              whileHover={selectedCategory && !isConfirming ? { scale: 1.02 } : {}}
+              whileTap={selectedCategory && !isConfirming ? { scale: 0.98 } : {}}
+            >
+              {isConfirming ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <>
+                  Begin Your Journey <Rocket className="w-4 h-4" />
+                </>
+              )}
+            </motion.button>
+          </div>
+        </div>
+      </motion.div>
     </div>
   );
 };
 
-/* ─── Day Timeline Pill ─── */
-const DayPill = ({ dayData, status, isActive, insights, onClick }) => {
-  const Icon = dayData.methodIcon;
-  const isCompleted = status === 'completed';
-  const isActiveDay = status === 'active';
-  const isLocked = status === 'locked';
-  
+/* ─── Day Header Component ─── */
+const DayHeader = ({ day, type, accent, currentDayAnswers, totalQuestions }) => {
+  const dayIcons = {
+    1: <Heart className="w-6 h-6" />,
+    2: <Star className="w-6 h-6" />,
+    3: <Target className="w-6 h-6" />,
+    4: <Users className="w-6 h-6" />,
+    5: <Flame className="w-6 h-6" />,
+    6: <Compass className="w-6 h-6" />
+  };
+
+  const dayTitles = {
+    1: "What You Love",
+    2: "What You Are Good At",
+    3: "What You Can Be Paid For",
+    4: "What The World Needs",
+    5: "Your Passion in Action",
+    6: "Your Mission & Purpose"
+  };
+
+  const dayColors = {
+    1: "from-pink-500 to-rose-500",
+    2: "from-blue-500 to-cyan-500",
+    3: "from-emerald-500 to-teal-500",
+    4: "from-purple-500 to-indigo-500",
+    5: "from-orange-500 to-amber-500",
+    6: "from-downy to-horizon"
+  };
+
+  const answeredCount = Object.keys(currentDayAnswers || {}).length;
+  const progress = totalQuestions > 0 ? (answeredCount / totalQuestions) * 100 : 0;
+
   return (
-    <div 
-      onClick={() => !isLocked && onClick(dayData.day)}
-      className={`flex items-center gap-3 p-3 rounded-xl transition-all cursor-pointer border ${
-        isActiveDay ? 'border-[#64CDD1] bg-[#64CDD1]/10 shadow-sm' : 
-        isCompleted ? 'border-[#5794A4]/30 bg-[#5794A4]/5' : 
-        'border-gray-100 bg-white hover:border-gray-200'
-      }`}
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="text-center mb-8"
     >
-      <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
-        isCompleted ? 'bg-[#5794A4]/20' : isActiveDay ? 'bg-[#64CDD1]/20' : 'bg-gray-50'
-      }`}>
-        {isCompleted ? <CheckCircle size={16} className="text-[#5794A4]" /> :
-         isActiveDay ? <Flame size={14} className="text-[#64CDD1]" /> :
-         <Lock size={12} className="text-gray-400" />}
-      </div>
-
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
-          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
-            isActiveDay ? 'bg-[#64CDD1]/20 text-[#64CDD1]' : 
-            isCompleted ? 'bg-[#5794A4]/20 text-[#5794A4]' : 'bg-gray-100 text-gray-500'
-          }`}>
-            Day {dayData.day}
-          </span>
-          {isActiveDay && <span className="text-[8px] text-[#64CDD1] animate-pulse">● ACTIVE</span>}
-          {isCompleted && insights > 0 && (
-            <span className="text-[8px] text-[#5794A4] flex items-center gap-0.5">
-              <Trophy size={8}/> {insights}
-            </span>
-          )}
+      <motion.div
+        initial={{ scale: 0 }}
+        animate={{ scale: 1 }}
+        transition={{ type: "spring", delay: 0.1 }}
+        className="inline-flex items-center gap-3 bg-white/90 backdrop-blur-sm px-5 py-2.5 rounded-full mb-5 shadow-md"
+      >
+        <div className={`w-8 h-8 rounded-full bg-gradient-to-r ${dayColors[day]} flex items-center justify-center shadow-lg`}>
+          {dayIcons[day]}
         </div>
-        <h3 className={`font-medium text-sm truncate ${isLocked ? 'text-gray-400' : 'text-gray-800'}`}>
-          {dayData.title}
-        </h3>
-        <p className="text-[10px] text-gray-400 flex items-center gap-1 mt-0.5">
-          <Icon size={8}/> {dayData.method}
-        </p>
-      </div>
+        <span className="text-sm font-bold" style={{ color: accent }}>
+          Day {day} of 6
+        </span>
+        <div className="w-px h-4 bg-gray-200" />
+        <span className="text-xs text-gray-500 capitalize">{type} Focus</span>
+      </motion.div>
 
-      {!isLocked && (
-        <ChevronRight size={14} className={`text-gray-300 ${isActiveDay ? 'text-[#64CDD1]' : ''}`} />
-      )}
-    </div>
+      <h2 className="font-sora text-3xl md:text-4xl font-bold text-tiber mb-3">
+        {dayTitles[day]}
+      </h2>
+      
+      <p className="text-gray-500 text-sm max-w-md mx-auto">
+        {day === 1 && "Discover what truly makes you come alive and brings you joy"}
+        {day === 2 && "Identify your natural strengths and talents that set you apart"}
+        {day === 3 && "Explore how your unique skills can create value and generate income"}
+        {day === 4 && "Find the meaningful problems you're called to solve in the world"}
+        {day === 5 && "Connect your deepest passions to real-world impact and action"}
+        {day === 6 && "Define your life's purpose and the legacy you want to leave"}
+      </p>
+
+      <div className="mt-4 flex justify-center">
+        <div className="relative w-16 h-16">
+          <svg className="w-16 h-16 transform -rotate-90">
+            <circle
+              cx="32"
+              cy="32"
+              r="28"
+              stroke="#E5E7EB"
+              strokeWidth="3"
+              fill="none"
+            />
+            <motion.circle
+              cx="32"
+              cy="32"
+              r="28"
+              stroke={accent}
+              strokeWidth="3"
+              fill="none"
+              strokeLinecap="round"
+              initial={{ strokeDasharray: "0 175.9" }}
+              animate={{ strokeDasharray: `${(progress / 100) * 175.9} 175.9` }}
+              transition={{ duration: 0.5 }}
+            />
+          </svg>
+          <div className="absolute inset-0 flex items-center justify-center">
+            <span className="text-xs font-bold" style={{ color: accent }}>{Math.round(progress)}%</span>
+          </div>
+        </div>
+      </div>
+    </motion.div>
   );
 };
 
-/* ─── Challenge Data ─── */
-const challengeData = [
-  { day:1, title:"Rediscover Your Curiosity",  subtitle:"Confusion → Awareness",
-    trigger:"Your childhood curiosity often hides your real purpose.",
-    method:"Self-Awareness", methodIcon:Brain,
-    emojiQuestion:"How did it feel to reconnect with your childhood curiosity?",
-    questions:["What activities make you lose track of time?","What topics do you naturally love talking about?","What work excites you without external motivation?","If money wasn't an issue, what would you do?","What content do you consume most?"],
-    output:"Passion Signals", habitPrompt:"Reflect on what truly excites you." },
-  { day:2, title:"Identity Awakening",         subtitle:"Awareness → Identity",
-    trigger:"Your identity is built from the problems you love solving.",
-    method:"Identity Reflection", methodIcon:Heart,
-    emojiQuestion:"How did you feel recognizing your natural strengths?",
-    questions:["What problems do people ask your help for?","What skills do others appreciate?","When do you feel most confident?","What environment makes you productive?","Describe yourself in 3 words?"],
-    output:"Identity Traits", habitPrompt:"Acknowledge your natural strengths." },
-  { day:3, title:"Skill Discovery",            subtitle:"Identity → Skills",
-    trigger:"What comes naturally might be a valuable skill to others.",
-    method:"Capability Awareness", methodIcon:Zap,
-    emojiQuestion:"How did it feel to discover your hidden skills?",
-    questions:["What skills do you already have?","What are you currently learning?","What skills could people pay for?","What digital skills enable remote work?","What skills help people online?"],
-    output:"Skill Inventory", habitPrompt:"Identify your core skills." },
-  { day:4, title:"Value Creation",    subtitle:"Skills → Value",
-    trigger:"Income grows when your skills solve real problems.",
-    method:"Problem Awareness", methodIcon:Target,
-    emojiQuestion:"How do you feel about problems you're passionate about solving?",
-    questions:["What problems do you see around you?","What problems do entrepreneurs face?","What do digital nomads struggle with?","What industry problems frustrate you?","Which problems excite you to solve?"],
-    output:"Problem-Solving Domain", habitPrompt:"Identify problems you're passionate about." },
-  { day:5, title:"Audience Discovery",         subtitle:"Value → Market",
-    trigger:"Purpose grows when you understand who you want to help.",
-    method:"Empathy Thinking", methodIcon:Users,
-    emojiQuestion:"How did it feel to visualize your ideal audience?",
-    questions:["Who benefits most from your skills?","Are they students, founders, or freelancers?","Where do they spend time online?","What are their biggest struggles?","What transformation can you provide?"],
-    output:"Target Audience", habitPrompt:"Visualize your ideal client." },
-  { day:6, title:"Monetization Thinking",      subtitle:"Market → Opportunity",
-    trigger:"Skills become income when packaged as services.",
-    method:"Opportunity Awareness", methodIcon:TrendingUp,
-    emojiQuestion:"How excited are you about turning skills into income?",
-    questions:["What services can you offer?","Can you create consulting or digital products?","What problems will people pay to solve?","How can you deliver remotely?","Which idea excites you most?"],
-    output:"Income Possibilities", habitPrompt:"Explore ways to monetize your skills." },
-  { day:7, title:"Your Ikigai Blueprint",      subtitle:"Opportunity → Purpose",
-    trigger:"Your purpose is where passion, skills, problems, and income meet.",
-    method:"Purpose Integration", methodIcon:Compass,
-    emojiQuestion:"How does it feel to see your complete Ikigai picture?",
-    questions:["Your core passion? (Day 1)","Your greatest strengths? (Day 2)","Skills to master? (Day 3)","Problem to solve? (Day 4)","Who will you serve? (Day 5)","How will you generate income? (Day 6)"],
-    output:"Ikigai Map", habitPrompt:"Integrate insights to discover your purpose." },
-];
-
-const MOODS = [
-  { emoji:'😊', label:'Good',    value:'good' },
-  { emoji:'😄', label:'Great',   value:'great' },
-  { emoji:'🤩', label:'Amazing', value:'amazing' },
-  { emoji:'😐', label:'Neutral', value:'neutral' },
-];
-
-const DAY_ACCENTS = [C.horizon, C.downy, C.horizon, C.downy, C.horizon, C.downy, C.horizon];
-
-/* ═══════════════════════════════════════════
-   MAIN COMPONENT
-═══════════════════════════════════════════ */
+/* ─── Main Component ─── */
 const Sevendays = () => {
   const navigate = useNavigate();
+  const {
+    selectedCategory,
+    setSelectedCategory,
+    answers: contextAnswers,
+    saveAnswer,
+    currentDay: contextCurrentDay,
+    setCurrentDay: setContextCurrentDay,
+    completedDays: contextCompletedDays,
+    completeDay: contextCompleteDay,
+    generateResult,
+    result,
+    isAnalyzing,
+    resetJourney
+  } = useIkigai();
 
-  const [currentDay,   setCurrentDay]   = useState(1);
-  const [expandedDay,  setExpandedDay]  = useState(1);
-  const [qIndex,       setQIndex]       = useState(0);
-  const [answers,      setAnswers]      = useState({});
-  const [mood,         setMood]         = useState(null);
-  const [habitRating,  setHabitRating]  = useState(3);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [currentAnswers, setCurrentAnswers] = useState({});
+  const [showResult, setShowResult] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
-  const [mounted,      setMounted]      = useState(false);
-  const [toast,        setToast]        = useState('');
+  const [toast, setToast] = useState('');
+  const [mounted, setMounted] = useState(false);
+  const [showDayCelebration, setShowDayCelebration] = useState(false);
+  const [completedDayNumber, setCompletedDayNumber] = useState(null);
+  const [isCompletingDay, setIsCompletingDay] = useState(false);
+  const [dayQuestions, setDayQuestions] = useState(null);
 
-  const [completedDays, setCompletedDays] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('ikigai_completed_days')||'[]'); } catch { return []; }
-  });
+  // Use context values - ensure day is between 1-6
+  const currentDay = Math.min(Math.max(contextCurrentDay || 1, 1), 6);
+  const completedDays = contextCompletedDays || [];
+  const setCurrentDay = setContextCurrentDay || (() => {});
+  const completeDay = contextCompleteDay || (() => {});
 
-  const [allDayAnswers, setAllDayAnswers] = useState(() => {
-    const r = {};
-    for (let d=1;d<=7;d++) {
-      try { const s=localStorage.getItem(`ikigai_day_${d}_answers`); if(s) r[d]=JSON.parse(s); } catch {}
-    }
-    return r;
-  });
-
-  useEffect(()=>{ setTimeout(()=>setMounted(true),60); },[]);
-  useEffect(()=>{ if(showConfetti) setTimeout(()=>setShowConfetti(false),3000); },[showConfetti]);
-  useEffect(()=>{ if(toast) setTimeout(()=>setToast(''),2500); },[toast]);
-
-  // Always enforce sequential progression
   useEffect(() => {
-    // Find the first incomplete day
-    let nextDay = 1;
-    for (let i = 1; i <= 7; i++) {
-      if (!completedDays.includes(i)) {
-        nextDay = i;
-        break;
+    setTimeout(() => setMounted(true), 60);
+  }, []);
+
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => setToast(''), 2500);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
+
+  useEffect(() => {
+    if (showConfetti) {
+      const timer = setTimeout(() => setShowConfetti(false), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [showConfetti]);
+
+  // Show category modal if no category selected
+  useEffect(() => {
+    if (!selectedCategory && !showResult && !result) {
+      setShowCategoryModal(true);
+    }
+  }, [selectedCategory, showResult, result]);
+
+  // Load questions for current day
+  useEffect(() => {
+    if (selectedCategory) {
+      // Ensure day is between 1-6
+      const safeDay = Math.min(Math.max(currentDay, 1), 6);
+      
+      // Try to get real questions
+      let questions = getQuestionsForCategory(selectedCategory, safeDay);
+      
+      // If no questions found, use fallback
+      if (!questions || !questions.questions || questions.questions.length === 0) {
+        console.log(`Using fallback questions for ${selectedCategory} day ${safeDay}`);
+        questions = getFallbackQuestions(selectedCategory, safeDay);
       }
+      
+      setDayQuestions(questions);
     }
-    if (currentDay !== nextDay) {
-      setCurrentDay(nextDay);
-      localStorage.setItem('ikigai_current_day', String(nextDay));
-    }
-  }, [completedDays, currentDay]);
+  }, [selectedCategory, currentDay]);
 
-  const getStatus = day => {
-    if (completedDays.includes(day)) return 'completed';
-    if (day === currentDay) return 'active';
-    return 'locked';
+  // Load existing answers for current day
+  useEffect(() => {
+    if (selectedCategory && dayQuestions) {
+      if (contextAnswers[currentDay]) {
+        setCurrentAnswers(contextAnswers[currentDay]);
+      } else {
+        setCurrentAnswers({});
+      }
+      
+      // Find first unanswered question
+      const firstUnansweredIndex = dayQuestions.questions.findIndex(
+        (q) => !contextAnswers[currentDay]?.[q.id]?.answer
+      );
+      setCurrentQuestionIndex(firstUnansweredIndex === -1 ? 0 : firstUnansweredIndex);
+    }
+  }, [currentDay, contextAnswers, selectedCategory, dayQuestions]);
+
+  const isDayCompleted = completedDays.includes(currentDay);
+
+  const currentQuestion = dayQuestions?.questions?.[currentQuestionIndex];
+  const currentType = dayQuestions?.type;
+  const totalQuestions = dayQuestions?.questions?.length || 0;
+
+  // Check if current question already has an answer
+  const currentQuestionHasAnswer = currentQuestion && 
+    (contextAnswers[currentDay]?.[currentQuestion.id]?.answer || currentAnswers[currentQuestion.id]?.answer);
+
+  const handleCategorySelect = (category) => {
+    setSelectedCategory(category);
+    setShowCategoryModal(false);
+    setToast(`✨ ${category.charAt(0).toUpperCase() + category.slice(1)} path selected! Let's begin your journey.`);
   };
 
-  const getDayInsights = day => {
-    try {
-      const s = JSON.parse(localStorage.getItem(`ikigai_day_${day}_answers`)||'null');
-      return s?.answers?.length || 0;
-    } catch { return 0; }
-  };
-
-  const dayProgress = () => {
-    const d = challengeData.find(d=>d.day===expandedDay);
-    if (!d) return 0;
-    return (d.questions.filter((_,i)=>answers[i]?.trim()).length / d.questions.length) * 100;
-  };
-
-  const overallProgress = (completedDays.length / 7) * 100;
-
-  const handleComplete = () => {
-    const d = challengeData.find(d=>d.day===expandedDay);
-    if (!d) return;
-    const allAnswered = d.questions.every((_,i)=>answers[i]?.trim());
-    if (!allAnswered) { setToast('✋ Please answer all questions first.'); return; }
-    if (!mood)        { setToast('😊 Please select your mood!'); return; }
-
-    setIsSubmitting(true);
-
-    const payload = {
-      answers: d.questions.map((q,i)=>({ question:q, answer:answers[i] })),
-      habitRating, mood, completedAt: new Date().toISOString(),
-    };
-    localStorage.setItem(`ikigai_day_${expandedDay}_answers`, JSON.stringify(payload,null,2));
-
-    const updated = { ...allDayAnswers, [expandedDay]: payload };
-    setAllDayAnswers(updated);
-
-    const newCompleted = [...completedDays, expandedDay];
-    setCompletedDays(newCompleted);
-    localStorage.setItem('ikigai_completed_days', JSON.stringify(newCompleted));
-
-    const nextDay = expandedDay + 1;
-    if (expandedDay < 7) {
-      setCurrentDay(nextDay);
-      localStorage.setItem('ikigai_current_day', String(nextDay));
+  const handleAnswerSelect = (answer) => {
+    if (currentQuestion) {
+      const newAnswers = {
+        ...currentAnswers,
+        [currentQuestion.id]: { answer, type: currentType, timestamp: new Date().toISOString() }
+      };
+      setCurrentAnswers(newAnswers);
+      saveAnswer(currentDay, currentQuestion.id, answer, currentType);
     }
+  };
 
+  const handleCompleteDay = useCallback(() => {
+    if (isCompletingDay || isDayCompleted) return;
+    
+    if (!dayQuestions?.questions) return;
+    
+    const allAnswered = dayQuestions.questions.every(
+      (q) => contextAnswers[currentDay]?.[q.id]?.answer || currentAnswers[q.id]?.answer
+    );
+    
+    if (!allAnswered) {
+      setToast('⚠️ Please answer all questions before completing the day.');
+      return;
+    }
+    
+    setIsCompletingDay(true);
+    
+    completeDay(currentDay);
+    
     setShowConfetti(true);
-    setAnswers({}); setQIndex(0); setMood(null); setHabitRating(3);
-
-    if (expandedDay < 7) {
-      setExpandedDay(nextDay);
-      setToast(`🎉 Day ${expandedDay} complete! Day ${nextDay} unlocked.`);
+    setCompletedDayNumber(currentDay);
+    setShowDayCelebration(true);
+    setToast(`🎉 Amazing! Day ${currentDay} complete!`);
+    
+    if (currentDay === 6) {
+      setTimeout(() => {
+        generateResult();
+        setShowResult(true);
+        setIsCompletingDay(false);
+      }, 4000);
     } else {
-      setToast('🌟 Congratulations! You\'ve completed the 7-Day Ikigai Journey!');
+      setTimeout(() => {
+        setIsCompletingDay(false);
+      }, 1000);
     }
+  }, [currentDay, dayQuestions, contextAnswers, currentAnswers, completeDay, generateResult, isDayCompleted, isCompletingDay]);
 
-    setIsSubmitting(false);
+  const handleNextQuestion = () => {
+    if (!currentQuestionHasAnswer) {
+      setToast('⚠️ Please select an answer first.');
+      return;
+    }
+    
+    if (currentQuestionIndex < totalQuestions - 1) {
+      setCurrentQuestionIndex(prev => prev + 1);
+    } else {
+      handleCompleteDay();
+    }
   };
 
-  const dayData = challengeData.find(d=>d.day===expandedDay);
-  const status  = dayData ? getStatus(dayData.day) : 'locked';
-  const accent  = dayData ? DAY_ACCENTS[dayData.day-1] : C.horizon;
-  const isAllAnswered = dayData?.questions.every((_,i)=>answers[i]?.trim());
-  const canComplete   = isAllAnswered && mood && !isSubmitting && status==='active';
-  const isFullyComplete = completedDays.length === 7;
-
-  const handleThirtyDayClick = () => {
-    if (isFullyComplete) {
-      navigate('/thirty');
-    } else {
-      setToast(`✨ Complete all 7 days first! (${completedDays.length}/7 completed)`);
+  const handlePrevQuestion = () => {
+    if (currentQuestionIndex > 0) {
+      setCurrentQuestionIndex(prev => prev - 1);
     }
   };
+
+  const handleCloseDayCelebration = () => {
+    setShowDayCelebration(false);
+    if (currentDay < 6 && !isDayCompleted) {
+      setCurrentDay(currentDay + 1);
+    }
+    setCompletedDayNumber(null);
+  };
+
+  const handleDownloadReport = () => {
+    if (!result) return;
+    
+    const reportData = {
+      userCategory: selectedCategory,
+      completedAt: new Date().toISOString(),
+      answers: contextAnswers,
+      result: result
+    };
+    
+    const blob = new Blob([JSON.stringify(reportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `ikigai-report-${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    setToast('📄 Report downloaded successfully!');
+  };
+
+  const handleStartOver = () => {
+    resetJourney();
+    navigate('/');
+  };
+
+  const handleResetJourney = () => {
+    if (window.confirm('Are you sure you want to reset your journey? All progress will be lost.')) {
+      resetJourney();
+      setShowCategoryModal(true);
+      setShowResult(false);
+      setCurrentQuestionIndex(0);
+      setCurrentAnswers({});
+      setCompletedDayNumber(null);
+      setDayQuestions(null);
+    }
+  };
+
+  // Show analyzing screen
+  if (isAnalyzing) {
+    return (
+      <div className="min-h-screen relative flex items-center justify-center" style={{ marginLeft: 280, background: C.powder }}>
+        <GradientBg />
+        <FloatingParticles />
+        <div className="relative z-10 text-center">
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+          >
+            <Loader2 className="w-20 h-20 text-downy mx-auto mb-6" />
+          </motion.div>
+          <h2 className="text-3xl font-bold text-tiber mb-3">Analyzing Your Answers</h2>
+          <p className="text-gray-500">Creating your personalized Ikigai map...</p>
+          <div className="mt-6 flex justify-center gap-2">
+            {[0, 1, 2, 3].map((i) => (
+              <motion.div
+                key={i}
+                className="w-3 h-3 rounded-full"
+                style={{ background: `linear-gradient(135deg, ${C.horizon}, ${C.downy})` }}
+                animate={{ scale: [1, 1.5, 1], opacity: [0.4, 1, 0.4] }}
+                transition={{ duration: 1, repeat: Infinity, delay: i * 0.2 }}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show results page (after Day 6 completion)
+  if (showResult && result) {
+    return (
+      <div className="min-h-screen relative" style={{ marginLeft: 280, background: C.powder }}>
+        <GradientBg />
+        <FloatingParticles />
+        <div className="relative z-10 max-w-4xl mx-auto px-6 py-12">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center mb-8"
+          >
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ type: "spring", delay: 0.2 }}
+              className="inline-flex items-center gap-2 bg-gradient-to-r from-downy/20 to-horizon/20 px-5 py-2.5 rounded-full mb-5"
+            >
+              <PartyPopper className="w-5 h-5 text-downy" />
+              <span className="text-sm font-medium text-downy">Congratulations!</span>
+            </motion.div>
+            <h1 className="font-sora text-5xl font-bold text-tiber mb-3">
+              Your Ikigai Discovery
+            </h1>
+            <p className="text-gray-600 text-lg">
+              Based on your 6-day journey, here's your personalized Ikigai map
+            </p>
+          </motion.div>
+
+          <IkigaiChart result={result} onDownload={handleDownloadReport} />
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            className="mt-8 flex flex-col sm:flex-row gap-4 justify-center"
+          >
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={handleStartOver}
+              className="px-8 py-3.5 bg-gradient-to-r from-horizon to-downy text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all"
+            >
+              Start New Journey
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => navigate('/')}
+              className="px-8 py-3.5 border-2 border-horizon text-horizon rounded-xl font-semibold hover:bg-horizon hover:text-white transition-all"
+            >
+              Back to Home
+            </motion.button>
+          </motion.div>
+        </div>
+      </div>
+    );
+  }
+
+  // If no category selected yet, show modal
+  if (!selectedCategory) {
+    return (
+      <div className="min-h-screen relative flex items-center justify-center" style={{ marginLeft: 280, background: C.powder }}>
+        <GradientBg />
+        <FloatingParticles />
+        <CategorySelectionModal
+          isOpen={showCategoryModal}
+          onSelectCategory={handleCategorySelect}
+          onClose={() => navigate('/')}
+        />
+      </div>
+    );
+  }
+
+  // Show loading while questions are being prepared
+  if (!dayQuestions) {
+    return (
+      <div className="min-h-screen relative flex items-center justify-center" style={{ marginLeft: 280, background: C.powder }}>
+        <GradientBg />
+        <FloatingParticles />
+        <div className="relative z-10 text-center">
+          <Loader2 className="w-16 h-16 text-downy mx-auto mb-4 animate-spin" />
+          <h2 className="text-xl font-semibold text-gray-600 mb-4">Loading your questions...</h2>
+          <p className="text-sm text-gray-400">Please wait while we prepare your journey</p>
+        </div>
+      </div>
+    );
+  }
+
+  const answeredCount = Object.keys(contextAnswers[currentDay] || currentAnswers).length;
+  const isLastQuestion = currentQuestionIndex === totalQuestions - 1;
+  const allQuestionsAnswered = dayQuestions?.questions?.every(
+    (q) => contextAnswers[currentDay]?.[q.id]?.answer || currentAnswers[q.id]?.answer
+  ) || false;
+
+  const accent = currentDay === 1 || currentDay === 3 || currentDay === 5 ? C.horizon : C.downy;
 
   return (
     <div className="min-h-screen relative" style={{ marginLeft: 280, background: C.powder }}>
-      <GradientBg/>
+      <GradientBg />
+      <FloatingParticles />
+
+      {/* Day Completion Celebration Modal */}
+      <AnimatePresence>
+        {showDayCelebration && completedDayNumber && (
+          <DayCompletionCelebration
+            day={completedDayNumber}
+            onClose={handleCloseDayCelebration}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Toast Notification */}
-      {toast && (
-        <div className="fixed top-6 left-1/2 transform -translate-x-1/2 z-[100] px-4 py-2.5 rounded-xl text-sm font-medium shadow-lg text-white animate-fade-in"
-          style={{ background: `linear-gradient(135deg, ${C.horizon}, ${C.downy})` }}>
-          {toast}
-        </div>
-      )}
-
-      <div className={`relative z-10 max-w-6xl mx-auto px-6 pt-8 pb-16 transition-all duration-500
-        ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-
-        {/* Header */}
-        <div className="grid lg:grid-cols-3 gap-8 mb-8">
-          <div className="lg:col-span-2">
-            <div className="flex items-center gap-2 mb-4">
-              <Sparkles size={18} style={{ color: C.downy }}/>
-              <span className="text-xs font-semibold tracking-wide uppercase text-gray-500">7-Day Ikigai Journey</span>
+      <AnimatePresence>
+        {toast && (
+          <motion.div
+            initial={{ opacity: 0, x: 50 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 50 }}
+            className="fixed top-6 right-6 z-[100] px-5 py-3 rounded-xl text-sm font-medium shadow-lg text-white"
+            style={{ background: `linear-gradient(135deg, ${C.horizon}, ${C.downy})` }}
+          >
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4" />
+              {toast}
             </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-            <h1 className="text-3xl md:text-4xl font-bold mb-3 text-gray-800">
-              Discover Your<br/>
-              <span style={{ color: C.horizon }}>Ikigai Purpose</span>
-            </h1>
-            <p className="text-sm text-gray-500 max-w-md">
-              Complete each day in order — your answers unlock your personalized Ikigai map.
+      <div className={`relative z-10 max-w-3xl mx-auto px-6 pt-8 pb-16 transition-all duration-700
+        ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+
+        {/* Reset Button */}
+        <div className="flex justify-end mb-4">
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={handleResetJourney}
+            className="text-xs text-gray-400 hover:text-red-500 transition-colors flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-red-50"
+          >
+            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            Reset Journey
+          </motion.button>
+        </div>
+
+        {/* Progress Bar */}
+        <ProgressBar currentDay={currentDay} completedDays={completedDays} />
+
+        {/* Day Header */}
+        <DayHeader 
+          day={currentDay}
+          type={dayQuestions?.type}
+          accent={accent}
+          currentDayAnswers={contextAnswers[currentDay] || currentAnswers}
+          totalQuestions={totalQuestions}
+        />
+
+        {/* Question Card */}
+        <motion.div
+          key={`${currentDay}-${currentQuestionIndex}`}
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="glass-card rounded-2xl p-6 md:p-8 shadow-xl border border-white/50"
+        >
+          {currentQuestion ? (
+            <QuestionCard
+              question={currentQuestion}
+              index={currentQuestionIndex}
+              total={totalQuestions}
+              selectedValue={currentAnswers[currentQuestion?.id]?.answer || contextAnswers[currentDay]?.[currentQuestion?.id]?.answer}
+              onSelect={handleAnswerSelect}
+              onNext={handleNextQuestion}
+              onPrev={handlePrevQuestion}
+              isLast={isLastQuestion}
+            />
+          ) : (
+            <div className="text-center py-8">
+              <Loader2 className="w-8 h-8 text-downy mx-auto mb-3 animate-spin" />
+              <p className="text-gray-500">Loading question...</p>
+            </div>
+          )}
+        </motion.div>
+
+        {/* Progress Info */}
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.2 }}
+          className="mt-6 text-center"
+        >
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/60 backdrop-blur-sm rounded-full shadow-sm">
+            <BookOpen size={14} className="text-downy" />
+            <span className="text-sm text-gray-600">
+              {answeredCount} of {totalQuestions} answered
+            </span>
+            {allQuestionsAnswered && !isDayCompleted && (
+              <motion.span 
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                className="text-xs text-green-500 ml-2 flex items-center gap-1"
+              >
+                <CheckCircle className="w-3 h-3" /> Ready to complete!
+              </motion.span>
+            )}
+          </div>
+        </motion.div>
+
+        {/* Motivational Quote */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.3 }}
+          className="mt-8 text-center"
+        >
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/40 rounded-full">
+            <Lightbulb className="w-3 h-3 text-gold" />
+            <p className="text-xs text-gray-500 italic">
+              {currentDay === 1 && "✨ Every journey begins with a single step. Let's discover what makes you come alive."}
+              {currentDay === 2 && "💪 Your unique strengths are waiting to be recognized. What comes naturally to you?"}
+              {currentDay === 3 && "💰 Your skills have value. Let's explore how they can serve others and create income."}
+              {currentDay === 4 && "🌍 The world needs your unique contribution. What problems are you called to solve?"}
+              {currentDay === 5 && "🔥 Your passion is the fuel for your purpose. How does it show up in your life?"}
+              {currentDay === 6 && "🎯 You're almost there! Let's connect everything together and define your mission."}
             </p>
-
-            <div className="flex flex-wrap gap-3 mt-5">
-              {[
-                { val: `${completedDays.length}/7`, label: 'Days Done', icon: <CheckCircle size={14}/> },
-                { val: `${Math.round(overallProgress)}%`, label: 'Progress', icon: <TrendingUp size={14}/> },
-                { val: '5-10 min', label: 'Per Day', icon: <Clock size={14}/> },
-              ].map((s,i)=>(
-                <div key={i} className="bg-white rounded-xl px-4 py-2.5 flex items-center gap-3 shadow-sm border border-gray-100">
-                  <div style={{ color: C.downy }}>{s.icon}</div>
-                  <div>
-                    <div className="text-lg font-bold text-gray-800">{s.val}</div>
-                    <div className="text-[10px] text-gray-400">{s.label}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="max-w-xs mt-4">
-              <div className="flex justify-between text-xs text-gray-500 mb-1">
-                <span>Journey Progress</span>
-                <span className="font-medium text-gray-700">{Math.round(overallProgress)}%</span>
-              </div>
-              <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                <div className="h-full rounded-full transition-all duration-700"
-                  style={{ width: `${overallProgress}%`, background: `linear-gradient(90deg, ${C.horizon}, ${C.downy})` }}/>
-              </div>
-            </div>
           </div>
+        </motion.div>
 
-          {/* Ikigai Chart */}
-          <IkigaiChart
-            allDayAnswers={allDayAnswers}
-            completedDays={completedDays}
-            onChallenge={handleThirtyDayClick}
-          />
-        </div>
-
-        {/* Main Grid */}
-        <div className="grid lg:grid-cols-5 gap-6">
-          
-          {/* Day Panel */}
-          <div className="lg:col-span-3">
-            {dayData ? (
-              <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-                
-                {/* Header */}
-                <div className="p-5 border-b border-gray-100">
-                  <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: `${accent}15` }}>
-                      <dayData.methodIcon size={18} style={{ color: accent }}/>
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 flex-wrap mb-1">
-                        <span className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: accent }}>{dayData.method}</span>
-                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">Day {dayData.day}</span>
-                        {status === 'active' && <span className="text-[9px] px-2 py-0.5 rounded-full bg-[#64CDD1]/20 text-[#64CDD1] animate-pulse">● ACTIVE</span>}
-                        {status === 'completed' && <span className="text-[9px] px-2 py-0.5 rounded-full bg-[#5794A4]/20 text-[#5794A4]">✓ DONE</span>}
-                      </div>
-                      <h2 className="text-lg font-bold text-gray-800">{dayData.title}</h2>
-                      <p className="text-xs text-gray-500 mt-0.5">{dayData.subtitle}</p>
-                    </div>
-                  </div>
-                  
-                  <div className="mt-3 p-3 bg-gray-50 rounded-xl">
-                    <div className="flex gap-2">
-                      <Zap size={12} style={{ color: accent }}/>
-                      <p className="text-xs text-gray-600 italic">"{dayData.trigger}"</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Content */}
-                <div className="p-5 space-y-4">
-                  <div>
-                    <div className="flex justify-between text-xs text-gray-500 mb-1">
-                      <span>Day Progress</span>
-                      <span className="font-medium" style={{ color: accent }}>{Math.round(dayProgress())}%</span>
-                    </div>
-                    <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                      <div className="h-full rounded-full transition-all duration-500"
-                        style={{ width: `${dayProgress()}%`, background: `linear-gradient(90deg, ${accent}, ${C.downy})` }}/>
-                    </div>
-                  </div>
-
-                  {/* Mood */}
-                  <div className="p-3 bg-gray-50 rounded-xl">
-                    <p className="text-xs font-medium text-gray-700 mb-2 flex items-center gap-1.5">
-                      <Star size={12} style={{ color: accent }}/> {dayData.emojiQuestion}
-                    </p>
-                    <div className="flex gap-2">
-                      {MOODS.map(m=>(
-                        <button key={m.value} onClick={()=>setMood(m.value)}
-                          className={`flex-1 flex flex-col items-center gap-1 py-2 rounded-lg transition-all ${
-                            mood === m.value ? 'bg-white shadow-sm' : 'bg-white/60 hover:bg-white'
-                          }`}
-                          style={{ border: mood === m.value ? `1px solid ${accent}` : '1px solid #E2E8F0' }}>
-                          <span className="text-lg">{m.emoji}</span>
-                          <span className="text-[9px] font-medium text-gray-500">{m.label}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Question */}
-                  <div className="p-3 bg-gray-50 rounded-xl">
-                    <QuestionCard
-                      question={dayData.questions[qIndex]}
-                      index={qIndex}
-                      total={dayData.questions.length}
-                      answer={answers[qIndex]||''}
-                      onAnswer={v=>setAnswers({...answers,[qIndex]:v})}
-                      onNext={()=>qIndex<dayData.questions.length-1&&setQIndex(qIndex+1)}
-                      onPrev={()=>qIndex>0&&setQIndex(qIndex-1)}
-                      canGoNext={!!(answers[qIndex]?.trim())}
-                      accent={accent}
-                    />
-                  </div>
-
-                  {/* Habit Rating */}
-                  <div className="p-3 bg-gray-50 rounded-xl">
-                    <p className="text-xs font-medium text-gray-700 mb-2 flex items-center gap-1.5">
-                      <Flame size={12} style={{ color: accent }}/> How meaningful was today's reflection?
-                    </p>
-                    <div className="flex gap-2">
-                      {[1,2,3,4,5].map(r=>(
-                        <button key={r} onClick={()=>setHabitRating(r)}
-                          className={`flex-1 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                            habitRating === r ? 'text-white' : 'bg-white text-gray-600 border border-gray-200'
-                          }`}
-                          style={{ background: habitRating === r ? accent : 'white' }}>
-                          {r}
-                        </button>
-                      ))}
-                    </div>
-                    <p className="text-[10px] text-gray-400 mt-2 italic">{dayData.habitPrompt}</p>
-                  </div>
-
-                  {/* Complete Button */}
-                  <div className="flex gap-3">
-                    <div className="flex-1 flex items-center gap-1.5 text-xs text-gray-500 bg-gray-50 px-3 py-2 rounded-lg">
-                      <Award size={12} style={{ color: accent }}/>
-                      <span>Generates: {dayData.output}</span>
-                    </div>
-                    <button
-                      onClick={handleComplete}
-                      disabled={!canComplete}
-                      className={`px-5 py-2 rounded-lg font-semibold text-sm transition-all ${
-                        canComplete 
-                          ? 'text-white hover:shadow-md' 
-                          : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                      }`}
-                      style={{ background: canComplete ? `linear-gradient(135deg, ${C.horizon}, ${C.downy})` : undefined }}>
-                      {status === 'completed' ? (
-                        <><CheckCircle size={14} className="inline mr-1"/> Completed</>
-                      ) : isSubmitting ? 'Saving…' : (
-                        <><Sparkles size={14} className="inline mr-1"/> Complete Day</>
-                      )}
-                    </button>
-                  </div>
-
-                  {/* Answer Summary */}
-                  {Object.keys(answers).some(k=>answers[k]?.trim()) && (
-                    <div className="p-3 bg-gray-50 rounded-xl">
-                      <p className="text-[10px] font-medium text-gray-500 mb-2 flex items-center gap-1.5">
-                        <BookOpen size={10}/> Your Answers ({Object.keys(answers).filter(k=>answers[k]?.trim()).length}/{dayData.questions.length})
-                      </p>
-                      <div className="space-y-1 max-h-28 overflow-y-auto">
-                        {dayData.questions.map((_,i)=>answers[i]?.trim()&&(
-                          <div key={i} className="text-[10px] text-gray-600 p-1.5 bg-white rounded-lg">
-                            <span className="font-medium" style={{ color: accent }}>Q{i+1}:</span> {answers[i].substring(0, 60)}...
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <div className="bg-white rounded-2xl p-10 text-center shadow-sm border border-gray-100">
-                <Lock size={32} className="mx-auto text-gray-300 mb-3"/>
-                <p className="text-gray-500">Select an unlocked day to begin</p>
-              </div>
-            )}
-          </div>
-
-          {/* Timeline */}
-          <div className="lg:col-span-2">
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-4 flex items-center gap-2">
-              <Calendar size={12}/> Journey Timeline
-            </h2>
-
-            <div className="space-y-2 max-h-[70vh] overflow-y-auto pr-1 custom-scrollbar">
-              {challengeData.map(d=>(
-                <DayPill key={d.day} dayData={d} status={getStatus(d.day)}
-                  isActive={expandedDay===d.day} insights={getDayInsights(d.day)}
-                  onClick={day=>{
-                    const s=getStatus(day);
-                    if(s!=='locked'){ setExpandedDay(day); setQIndex(0); setAnswers({}); setMood(null); }
-                  }}/>
-              ))}
-            </div>
-
-            {/* Completion Card */}
-            {isFullyComplete && (
-              <div className="mt-4 p-4 bg-gradient-to-r from-[#5794A4]/10 to-[#64CDD1]/10 rounded-xl text-center border border-[#64CDD1]/30">
-                <div className="text-2xl mb-1">🎉</div>
-                <p className="text-sm font-semibold text-gray-800">Journey Complete!</p>
-                <p className="text-xs text-gray-500 mb-3">Your Ikigai map is ready</p>
-                <button
-                  onClick={handleThirtyDayClick}
-                  className="px-4 py-2 bg-[#5794A4] text-white text-xs font-medium rounded-lg hover:bg-[#64CDD1] transition-all"
-                >
-                  Start 30-Day Challenge <Rocket size={12} className="inline ml-1"/>
-                </button>
-              </div>
-            )}
-
-            {/* Legend */}
-            <div className="mt-4 p-3 bg-white/80 rounded-xl">
-              <p className="text-[9px] font-semibold uppercase text-gray-400 mb-2">Legend</p>
-              <div className="space-y-1.5">
-                <div className="flex items-center gap-2"><CheckCircle size={10} className="text-[#5794A4]"/><span className="text-[10px] text-gray-500">Completed</span></div>
-                <div className="flex items-center gap-2"><Flame size={10} className="text-[#64CDD1]"/><span className="text-[10px] text-gray-500">Active Day</span></div>
-                <div className="flex items-center gap-2"><Lock size={9} className="text-gray-400"/><span className="text-[10px] text-gray-500">Locked — complete in order</span></div>
-              </div>
-            </div>
-          </div>
-        </div>
+        {/* Daily Insight Tip */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.4 }}
+          className="mt-4 p-3 bg-white/30 rounded-xl text-center"
+        >
+          <p className="text-[10px] text-gray-400">
+            💡 <span className="font-medium">Insight:</span>{' '}
+            {currentDay === 1 && "Take your time with each question. Your honest answers matter most."}
+            {currentDay === 2 && "Think about compliments you've received. Others often see our strengths clearly."}
+            {currentDay === 3 && "Consider problems you've solved for friends or colleagues. That's value!"}
+            {currentDay === 4 && "What frustrates you about the world? That frustration might point to your mission."}
+            {currentDay === 5 && "When do you feel most alive? Those moments reveal your passion."}
+            {currentDay === 6 && "Your answers across all days will now come together to form your Ikigai map."}
+          </p>
+        </motion.div>
       </div>
 
-      {/* Confetti */}
-      {showConfetti && (
-        <div className="fixed inset-0 pointer-events-none z-50">
-          {Array.from({length:60}).map((_,i)=>(
-            <div key={i} className="absolute rounded-sm"
-              style={{
-                width:4+Math.random()*4, height:4+Math.random()*4,
-                left:`${Math.random()*100}%`, top:'-10px',
-                background: [C.horizon, C.downy, '#FBBF24'][Math.floor(Math.random()*3)],
-                animation:`confettiFall ${1.5+Math.random()*1.5}s ${Math.random()*1}s linear forwards`,
-              }}/>
-          ))}
-        </div>
-      )}
+      {/* Enhanced Confetti Animation */}
+      <AnimatePresence>
+        {showConfetti && (
+          <div className="fixed inset-0 pointer-events-none z-50">
+            {Array.from({ length: 200 }).map((_, i) => (
+              <motion.div
+                key={i}
+                initial={{ 
+                  x: Math.random() * window.innerWidth,
+                  y: -20,
+                  rotate: 0,
+                  scale: Math.random() * 0.8 + 0.4
+                }}
+                animate={{ 
+                  y: window.innerHeight + 50,
+                  rotate: 360 * (Math.random() * 3 + 1),
+                  x: `+=${Math.random() * 100 - 50}`
+                }}
+                transition={{ 
+                  duration: 1.5 + Math.random() * 2,
+                  delay: Math.random() * 0.8,
+                  ease: "easeOut"
+                }}
+                className="absolute rounded-sm"
+                style={{
+                  width: 6 + Math.random() * 8,
+                  height: 6 + Math.random() * 8,
+                  background: [C.horizon, C.downy, '#FBBF24', '#FF6B6B', '#4ECDC4', '#A78BFA', '#F472B6'][Math.floor(Math.random() * 7)],
+                  borderRadius: Math.random() > 0.5 ? '50%' : '2px',
+                }}
+              />
+            ))}
+          </div>
+        )}
+      </AnimatePresence>
 
       <style>{`
         @keyframes confettiFall {
@@ -763,9 +1390,12 @@ const Sevendays = () => {
           to { opacity: 1; transform: translateX(-50%) translateY(0); }
         }
         .animate-fade-in { animation: fade-in 0.25s ease forwards; }
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: #F1F5F9; border-radius: 10px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 10px; }
+        
+        .glass-card {
+          background: rgba(255, 255, 255, 0.8);
+          backdrop-filter: blur(12px);
+          border: 1px solid rgba(255, 255, 255, 0.5);
+        }
       `}</style>
     </div>
   );

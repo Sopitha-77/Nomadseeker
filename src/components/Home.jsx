@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
-// Remove useNavigate import since you're not using React Router
-// import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { 
   ArrowRight, Compass, DollarSign, Globe, Play, ChevronRight, 
   CheckCircle, Star, MessageCircle, X, MapPin, Briefcase, 
   TrendingUp, Rocket, Users, Shield, Zap, Target,
   ChevronLeft, Pause, Award, Heart, Coffee, Lock as LockIcon,
-  Crown, User, Briefcase as BriefcaseIcon, Code, Brain
+  Crown, User, Briefcase as BriefcaseIcon, Code, Brain, Sparkles
 } from 'lucide-react';
+import { useIkigai } from '../context/IkigaiContext';
 
 // Import your images
 import photo1 from '../assets/photo1.jpeg';
@@ -190,148 +191,11 @@ const Confetti = () => {
   );
 };
 
-// User Type Selection Popup Component
-const UserTypePopup = ({ onSelect, onClose }) => {
-  const [selectedType, setSelectedType] = useState(null);
-  const [showActionPopup, setShowActionPopup] = useState(false);
-
-  const userTypes = [
-    { 
-      id: 'entrepreneur', 
-      title: 'Entrepreneur', 
-      subtitle: 'Founder · Innovator',
-      description: 'Visionary leaders building something new',
-      icon: Rocket,
-      color: '#64CDD1',
-      bgGradient: 'from-[#64CDD1]/20 to-[#64CDD1]/5'
-    },
-    { 
-      id: 'managerial', 
-      title: 'Managerial', 
-      subtitle: 'Marketing · Business Developer',
-      description: 'Strategic thinkers driving growth',
-      icon: TrendingUp,
-      color: '#5794A4',
-      bgGradient: 'from-[#5794A4]/20 to-[#5794A4]/5'
-    },
-    { 
-      id: 'technician', 
-      title: 'Technician', 
-      subtitle: 'Developer · Creator · Sales',
-      description: 'Hands-on experts executing excellence',
-      icon: Code,
-      color: '#0A3948',
-      bgGradient: 'from-[#0A3948]/20 to-[#0A3948]/5'
-    }
-  ];
-
-  const handleTypeSelect = (typeId) => {
-    setSelectedType(typeId);
-    setShowActionPopup(true);
-  };
-
-  const handleStartChallenge = () => {
-    if (onSelect) {
-      onSelect(selectedType, 'start');
-    }
-  };
-
-  const handleLater = () => {
-    if (onClose) {
-      onClose();
-    }
-  };
-
-  if (showActionPopup) {
-    const selected = userTypes.find(t => t.id === selectedType);
-    return (
-      <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={handleLater}>
-        <div className="bg-white rounded-3xl max-w-md w-full mx-4 p-8 shadow-2xl animate-popup" onClick={e => e.stopPropagation()}>
-          <div className="text-center mb-6">
-            <div 
-              className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4"
-              style={{ background: `linear-gradient(135deg, ${selected.color}20, ${selected.color}10)` }}
-            >
-              <selected.icon size={36} style={{ color: selected.color }} />
-            </div>
-            <h2 className="text-2xl font-bold text-[#0A3948] mb-2">Ready to Begin?</h2>
-            <p className="text-gray-500 text-sm">
-              You've chosen the <span className="font-bold" style={{ color: selected.color }}>{selected.title}</span> path
-            </p>
-          </div>
-
-          <div className="flex gap-3">
-            <button
-              onClick={handleStartChallenge}
-              className="flex-1 px-6 py-3 bg-gradient-to-r from-[#0A3948] to-[#5794A4] text-white rounded-xl font-semibold hover:shadow-lg hover:-translate-y-0.5 transition-all"
-            >
-              Let's Start 7 Days Challenge <Rocket size={16} className="inline ml-1" />
-            </button>
-            <button
-              onClick={handleLater}
-              className="px-6 py-3 border-2 border-gray-200 text-gray-500 rounded-xl font-semibold hover:bg-gray-50 transition-all"
-            >
-              Later
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={onClose}>
-      <div className="bg-white rounded-3xl max-w-3xl w-full mx-4 p-8 shadow-2xl animate-popup" onClick={e => e.stopPropagation()}>
-        <div className="flex justify-between items-center mb-4">
-          <div className="w-16 h-16 bg-gradient-to-br from-[#64CDD1]/20 to-[#5794A4]/20 rounded-full flex items-center justify-center">
-            <Compass size={32} className="text-[#0A3948]" />
-          </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-            <X size={24} />
-          </button>
-        </div>
-        <div className="text-center mb-6">
-          <h2 className="text-2xl font-bold text-[#0A3948] mb-2">Choose Your Path</h2>
-          <p className="text-gray-500 text-sm">Select the role that best describes you</p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          {userTypes.map((type) => {
-            const Icon = type.icon;
-            const isSelected = selectedType === type.id;
-            return (
-              <button
-                key={type.id}
-                onClick={() => handleTypeSelect(type.id)}
-                className={`p-6 rounded-2xl text-center transition-all transform hover:scale-105 ${
-                  isSelected 
-                    ? 'ring-2 ring-[#64CDD1] shadow-lg' 
-                    : 'hover:shadow-md'
-                }`}
-                style={{
-                  background: isSelected ? `linear-gradient(135deg, ${type.color}15, ${type.color}05)` : '#F8FAFC',
-                  border: `1px solid ${isSelected ? type.color : '#E2E8F0'}`
-                }}
-              >
-                <div className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-3" style={{ background: `${type.color}15` }}>
-                  <Icon size={28} style={{ color: type.color }} />
-                </div>
-                <h3 className="font-bold text-lg mb-1" style={{ color: type.color }}>{type.title}</h3>
-                <p className="text-xs text-gray-500 font-medium">{type.subtitle}</p>
-                <p className="text-[10px] text-gray-400 mt-2">{type.description}</p>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-    </div>
-  );
-};
-
 // --- MAIN APPLICATION ---
-export default function Home({ setActiveTab }) {  // Add setActiveTab as a prop
-  // Remove navigate
-  // const navigate = useNavigate();
+export default function Home() {
+  const navigate = useNavigate();
+  const { setSelectedCategory, selectedCategory } = useIkigai();
+  const [hoveredCard, setHoveredCard] = useState(null);
   
   // --- STATE MANAGEMENT ---
   const [onboardingStep, setOnboardingStep] = useState(1);
@@ -347,6 +211,37 @@ export default function Home({ setActiveTab }) {  // Add setActiveTab as a prop
   // Slider state
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
+
+  // Ikigai categories for the new section
+  const categories = [
+    {
+      id: 'entrepreneur',
+      title: 'Entrepreneur',
+      subtitle: 'Founder · Innovator · Builder',
+      description: 'Visionary leaders who build something new and create impact through innovation.',
+      icon: Rocket,
+      color: '#64CDD1',
+      features: ['Startup Mindset', 'Product Innovation', 'Business Growth']
+    },
+    {
+      id: 'managerial',
+      title: 'Managerial',
+      subtitle: 'Marketing · Business Developer · Strategist',
+      description: 'Strategic thinkers who drive growth, optimize systems, and lead teams to success.',
+      icon: TrendingUp,
+      color: '#5794A4',
+      features: ['Team Leadership', 'Strategic Planning', 'Process Optimization']
+    },
+    {
+      id: 'technician',
+      title: 'Technician',
+      subtitle: 'Developer · Creator · Specialist',
+      description: 'Hands-on experts who execute with precision and build technical solutions.',
+      icon: Code,
+      color: '#0A3948',
+      features: ['Technical Skills', 'Problem Solving', 'Building Solutions']
+    }
+  ];
 
   // Community images with your IMPORTED JPEG files
   const communityImages = [
@@ -430,10 +325,7 @@ export default function Home({ setActiveTab }) {  // Add setActiveTab as a prop
   const handleUserTypeSelect = (type, action) => {
     setShowUserTypePopup(false);
     if (action === 'start') {
-      // Use setActiveTab to navigate to sevendays page
-      if (setActiveTab) {
-        setActiveTab('sevendays');
-      }
+      navigate('/sevendays');
     }
   };
 
@@ -443,9 +335,13 @@ export default function Home({ setActiveTab }) {  // Add setActiveTab as a prop
 
   // Function to navigate to sevendays page
   const goToSevendays = () => {
-    if (setActiveTab) {
-      setActiveTab('sevendays');
-    }
+    navigate('/sevendays');
+  };
+
+  // Ikigai category selection handler
+  const handleCategorySelect = (categoryId) => {
+    setSelectedCategory(categoryId);
+    navigate('/sevendays');
   };
 
   const nextSlide = () => {
@@ -487,6 +383,141 @@ export default function Home({ setActiveTab }) {  // Add setActiveTab as a prop
     { name: "Marcus Chen", role: "Freelance Designer", before: "Struggling for clients", after: "Running a 6-figure agency", quote: "The 30-day challenge completely rewired how I approach income generation and travel. I've now visited 15 countries while working!" },
     { name: "Elena Rodriguez", role: "Digital Nomad", before: "Dreaming of travel", after: "Visited 12 countries this year", quote: "Finally, a roadmap that cuts the BS. I packed my bags exactly 60 days after starting. Best decision of my life!" }
   ];
+
+  // User Type Popup Component
+  const UserTypePopup = ({ onSelect, onClose }) => {
+    const [selectedType, setSelectedType] = useState(null);
+    const [showActionPopup, setShowActionPopup] = useState(false);
+
+    const userTypes = [
+      { 
+        id: 'entrepreneur', 
+        title: 'Entrepreneur', 
+        subtitle: 'Founder · Innovator',
+        description: 'Visionary leaders building something new',
+        icon: Rocket,
+        color: '#64CDD1',
+      },
+      { 
+        id: 'managerial', 
+        title: 'Managerial', 
+        subtitle: 'Marketing · Business Developer',
+        description: 'Strategic thinkers driving growth',
+        icon: TrendingUp,
+        color: '#5794A4',
+      },
+      { 
+        id: 'technician', 
+        title: 'Technician', 
+        subtitle: 'Developer · Creator · Sales',
+        description: 'Hands-on experts executing excellence',
+        icon: Code,
+        color: '#0A3948',
+      }
+    ];
+
+    const handleTypeSelect = (typeId) => {
+      setSelectedType(typeId);
+      setShowActionPopup(true);
+    };
+
+    const handleStartChallenge = () => {
+      if (onSelect) {
+        onSelect(selectedType, 'start');
+      }
+    };
+
+    const handleLater = () => {
+      if (onClose) {
+        onClose();
+      }
+    };
+
+    if (showActionPopup) {
+      const selected = userTypes.find(t => t.id === selectedType);
+      return (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={handleLater}>
+          <div className="bg-white rounded-3xl max-w-md w-full mx-4 p-8 shadow-2xl animate-popup" onClick={e => e.stopPropagation()}>
+            <div className="text-center mb-6">
+              <div 
+                className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4"
+                style={{ background: `linear-gradient(135deg, ${selected.color}20, ${selected.color}10)` }}
+              >
+                <selected.icon size={36} style={{ color: selected.color }} />
+              </div>
+              <h2 className="text-2xl font-bold text-[#0A3948] mb-2">Ready to Begin?</h2>
+              <p className="text-gray-500 text-sm">
+                You've chosen the <span className="font-bold" style={{ color: selected.color }}>{selected.title}</span> path
+              </p>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={handleStartChallenge}
+                className="flex-1 px-6 py-3 bg-gradient-to-r from-[#0A3948] to-[#5794A4] text-white rounded-xl font-semibold hover:shadow-lg hover:-translate-y-0.5 transition-all"
+              >
+                Let's Start 7 Days Challenge <Rocket size={16} className="inline ml-1" />
+              </button>
+              <button
+                onClick={handleLater}
+                className="px-6 py-3 border-2 border-gray-200 text-gray-500 rounded-xl font-semibold hover:bg-gray-50 transition-all"
+              >
+                Later
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={onClose}>
+        <div className="bg-white rounded-3xl max-w-3xl w-full mx-4 p-8 shadow-2xl animate-popup" onClick={e => e.stopPropagation()}>
+          <div className="flex justify-between items-center mb-4">
+            <div className="w-16 h-16 bg-gradient-to-br from-[#64CDD1]/20 to-[#5794A4]/20 rounded-full flex items-center justify-center">
+              <Compass size={32} className="text-[#0A3948]" />
+            </div>
+            <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+              <X size={24} />
+            </button>
+          </div>
+          <div className="text-center mb-6">
+            <h2 className="text-2xl font-bold text-[#0A3948] mb-2">Choose Your Path</h2>
+            <p className="text-gray-500 text-sm">Select the role that best describes you</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+            {userTypes.map((type) => {
+              const Icon = type.icon;
+              const isSelected = selectedType === type.id;
+              return (
+                <button
+                  key={type.id}
+                  onClick={() => handleTypeSelect(type.id)}
+                  className={`p-6 rounded-2xl text-center transition-all transform hover:scale-105 ${
+                    isSelected 
+                      ? 'ring-2 ring-[#64CDD1] shadow-lg' 
+                      : 'hover:shadow-md'
+                  }`}
+                  style={{
+                    background: isSelected ? `linear-gradient(135deg, ${type.color}15, ${type.color}05)` : '#F8FAFC',
+                    border: `1px solid ${isSelected ? type.color : '#E2E8F0'}`
+                  }}
+                >
+                  <div className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-3" style={{ background: `${type.color}15` }}>
+                    <Icon size={28} style={{ color: type.color }} />
+                  </div>
+                  <h3 className="font-bold text-lg mb-1" style={{ color: type.color }}>{type.title}</h3>
+                  <p className="text-xs text-gray-500 font-medium">{type.subtitle}</p>
+                  <p className="text-[10px] text-gray-400 mt-2">{type.description}</p>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="relative min-h-screen md:ml-[280px]">
@@ -580,7 +611,129 @@ export default function Home({ setActiveTab }) {  // Add setActiveTab as a prop
         </div>
       </section>
 
-      {/* 2. INTERACTIVE ONBOARDING */}
+      {/* 2. IKIGAI CATEGORIES SECTION */}
+      <section className="py-16 px-6 lg:px-20 max-w-[1440px] mx-auto">
+        <div className="text-center mb-12 reveal">
+          <div className="inline-flex items-center gap-2 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full mb-4 shadow-sm">
+            <Sparkles className="w-4 h-4 text-downy" />
+            <span className="text-sm font-medium text-tiber">Discover Your Purpose</span>
+          </div>
+          <h2 className="font-sora text-4xl font-bold mb-4 bg-gradient-to-r from-tiber to-horizon bg-clip-text text-transparent">
+            Find Your Ikigai
+          </h2>
+          <p className="font-inter text-tiber/60 max-w-2xl mx-auto">
+            Embark on a transformative 7-day journey to discover what you love, 
+            what you're good at, what the world needs, and what you can be paid for.
+          </p>
+          <div className="flex flex-wrap gap-4 justify-center mt-6">
+            <div className="flex items-center gap-2 text-sm text-gray-500">
+              <CheckCircle className="w-4 h-4 text-downy" />
+              <span>7-Day Structured Journey</span>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-gray-500">
+              <CheckCircle className="w-4 h-4 text-downy" />
+              <span>Personalized Results</span>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-gray-500">
+              <CheckCircle className="w-4 h-4 text-downy" />
+              <span>Visual Ikigai Map</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid md:grid-cols-3 gap-6">
+          {categories.map((category, index) => {
+            const Icon = category.icon;
+            const isHovered = hoveredCard === category.id;
+            
+            return (
+              <motion.div
+                key={category.id}
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1, duration: 0.5 }}
+                onMouseEnter={() => setHoveredCard(category.id)}
+                onMouseLeave={() => setHoveredCard(null)}
+              >
+                <button
+                  onClick={() => handleCategorySelect(category.id)}
+                  className={`w-full h-full text-left p-6 rounded-2xl transition-all duration-300 hover-lift ${
+                    selectedCategory === category.id
+                      ? 'ring-2 ring-downy shadow-xl'
+                      : 'hover:shadow-xl'
+                  }`}
+                  style={{
+                    background: `linear-gradient(135deg, ${category.color}08, white)`,
+                    border: `1px solid ${category.color}20`
+                  }}
+                >
+                  <div
+                    className="w-14 h-14 rounded-xl flex items-center justify-center mb-4"
+                    style={{ background: `${category.color}15` }}
+                  >
+                    <Icon className="w-7 h-7" style={{ color: category.color }} />
+                  </div>
+                  
+                  <h3 className="font-sora text-xl font-bold mb-1" style={{ color: category.color }}>
+                    {category.title}
+                  </h3>
+                  <p className="text-sm text-gray-500 mb-3">{category.subtitle}</p>
+                  <p className="text-sm text-gray-600 mb-4">{category.description}</p>
+                  
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    {category.features.map((feature, i) => (
+                      <span
+                        key={i}
+                        className="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-600"
+                      >
+                        {feature}
+                      </span>
+                    ))}
+                  </div>
+                  
+                  <div
+                    className={`flex items-center gap-2 text-sm font-medium transition-all ${
+                      isHovered ? 'gap-3' : ''
+                    }`}
+                    style={{ color: category.color }}
+                  >
+                    <span>Start Journey</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </div>
+                </button>
+              </motion.div>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* 3. HOW IT WORKS - IKIGAI SECTION */}
+      <section className="py-16 px-6 lg:px-20 max-w-[1440px] mx-auto bg-white/30 rounded-3xl">
+        <div className="text-center mb-12 reveal">
+          <h2 className="font-sora text-3xl font-bold text-tiber mb-4">How It Works</h2>
+          <p className="text-gray-600">A simple, structured journey to discover your Ikigai in 7 days</p>
+        </div>
+        
+        <div className="grid md:grid-cols-4 gap-6">
+          {[
+            { step: '01', title: 'Choose Path', desc: 'Select your category', icon: Target },
+            { step: '02', title: 'Answer Questions', desc: '6 days of reflection', icon: Users },
+            { step: '03', title: 'Discover', desc: 'Get your Ikigai map', icon: Globe },
+            { step: '04', title: 'Take Action', desc: 'Start your journey', icon: Zap }
+          ].map((item, i) => (
+            <div key={i} className="text-center">
+              <div className="w-16 h-16 rounded-full bg-downy/10 flex items-center justify-center mx-auto mb-4">
+                <item.icon className="w-8 h-8 text-downy" />
+              </div>
+              <div className="text-2xl font-bold text-horizon mb-2">{item.step}</div>
+              <h3 className="font-semibold text-tiber mb-1">{item.title}</h3>
+              <p className="text-sm text-gray-500">{item.desc}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* 4. INTERACTIVE ONBOARDING */}
       <section id="onboarding" className="py-24 px-6 relative">
         <div className="max-w-[800px] mx-auto reveal">
           <div className="text-center mb-10">
@@ -715,7 +868,7 @@ export default function Home({ setActiveTab }) {  // Add setActiveTab as a prop
         </div>
       </section>
 
-      {/* 3. PROGRAMS SHOWCASE */}
+      {/* 5. PROGRAMS SHOWCASE */}
       <section id="programs" className="py-24 px-6 lg:px-20 max-w-[1440px] mx-auto">
         <div className="text-center mb-16 reveal">
           <h2 className="font-sora text-4xl font-bold mb-4 bg-gradient-to-r from-tiber to-horizon bg-clip-text text-transparent">Choose Your Transformation</h2>
@@ -747,7 +900,7 @@ export default function Home({ setActiveTab }) {  // Add setActiveTab as a prop
               <button 
                 className={`w-full border-2 border-tiber font-sora font-bold py-3 rounded-xl transition-all ${prog.locked ? 'opacity-50 cursor-not-allowed' : 'hover:bg-tiber hover:text-white'}`}
                 style={{ color: prog.locked ? '#94a3b8' : 'var(--tiber)' }}
-                onClick={() => !prog.locked && setActiveTab && setActiveTab(prog.link)}
+                onClick={() => !prog.locked && navigate(`/${prog.link}`)}
                 disabled={prog.locked}
               >
                 {prog.locked ? `🔒 ${prog.message}` : 'View Program'}
@@ -757,7 +910,7 @@ export default function Home({ setActiveTab }) {  // Add setActiveTab as a prop
         </div>
       </section>
 
-      {/* 4. STORY SECTION */}
+      {/* 6. STORY SECTION */}
       <section id="story" className="bg-tiber text-white py-24 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-96 h-96 bg-horizon/20 rounded-full blur-[120px]"></div>
         <div className="absolute bottom-0 left-0 w-96 h-96 bg-downy/10 rounded-full blur-[120px]"></div>
@@ -772,7 +925,7 @@ export default function Home({ setActiveTab }) {  // Add setActiveTab as a prop
         </div>
       </section>
 
-      {/* 5. HOW IT WORKS */}
+      {/* 7. HOW IT WORKS SECTION (Original) */}
       <section className="py-24 px-6 lg:px-20 max-w-[1440px] mx-auto text-center">
         <h2 className="font-sora text-4xl font-bold mb-16 reveal bg-gradient-to-r from-tiber to-horizon bg-clip-text text-transparent">How It Actually Works</h2>
         <div className="flex flex-col md:flex-row justify-center items-center md:items-start gap-8 relative reveal">
@@ -794,7 +947,7 @@ export default function Home({ setActiveTab }) {  // Add setActiveTab as a prop
         </div>
       </section>
 
-      {/* 6. SOCIAL PROOF CAROUSEL */}
+      {/* 8. SOCIAL PROOF CAROUSEL */}
       <section className="py-24 px-6 overflow-hidden bg-white/30">
         <div className="max-w-[1440px] mx-auto reveal">
           <div className="flex flex-col md:flex-row justify-between items-end mb-12">
@@ -819,7 +972,7 @@ export default function Home({ setActiveTab }) {  // Add setActiveTab as a prop
         </div>
       </section>
 
-      {/* 7. COMMUNITY SECTION WITH 5 SLIDING PHOTOS */}
+      {/* 9. COMMUNITY SECTION WITH 5 SLIDING PHOTOS */}
       <section id="community" className="py-24 px-6 lg:px-20 max-w-[1440px] mx-auto">
         <div className="grid md:grid-cols-2 gap-16 items-center mb-20">
           <div className="reveal order-2 md:order-1 relative">
@@ -905,7 +1058,7 @@ export default function Home({ setActiveTab }) {  // Add setActiveTab as a prop
         </div>
       </section>
 
-      {/* 8. FINAL CTA */}
+      {/* 10. FINAL CTA */}
       <section className="py-24 px-6 relative">
         <div className="absolute inset-0 bg-gradient-to-br from-tiber to-horizon z-0"></div>
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-downy/20 rounded-full blur-[120px] z-0"></div>
@@ -919,7 +1072,7 @@ export default function Home({ setActiveTab }) {  // Add setActiveTab as a prop
         </div>
       </section>
 
-      {/* 9. FOOTER */}
+      {/* 11. FOOTER */}
       <footer className="bg-white py-16 px-6 lg:px-20 border-t border-tiber/10">
         <div className="max-w-[1440px] mx-auto grid grid-cols-2 md:grid-cols-4 gap-10">
           <div className="col-span-2 md:col-span-1">

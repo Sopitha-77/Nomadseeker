@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Lock, LogOut, Home, Calendar, TrendingUp, Globe, Compass, Briefcase, Info, Mail, ChevronDown, Target, Zap, Award } from 'lucide-react';
 import logo from '../assets/Logo.png';
 
-const Navbar = ({ activeTab, setActiveTab, user, onLogout }) => {
+const Navbar = ({ user, onLogout }) => {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [isIkigaiOpen, setIsIkigaiOpen] = useState(false);
   const [showLockAnimation, setShowLockAnimation] = useState(false);
   const [lockedItem, setLockedItem] = useState(null);
@@ -11,8 +14,12 @@ const Navbar = ({ activeTab, setActiveTab, user, onLogout }) => {
   const hasCompletedSevenDays = () => {
     const completedDays = localStorage.getItem('ikigai_completed_days');
     if (completedDays) {
-      const days = JSON.parse(completedDays);
-      return days.includes(7);
+      try {
+        const days = JSON.parse(completedDays);
+        return days.includes(7);
+      } catch {
+        return false;
+      }
     }
     return false;
   };
@@ -20,16 +27,18 @@ const Navbar = ({ activeTab, setActiveTab, user, onLogout }) => {
   const isUnlocked = hasCompletedSevenDays();
 
   const navItems = [
-    { id: 'home', label: 'Home', icon: Home, color: '#5794A4' },
-    { id: 'about', label: 'About Us', icon: Info, color: '#5794A4' },
-    { id: 'contact', label: 'Contact Us', icon: Mail, color: '#5794A4' }
+    { id: 'home', path: '/', label: 'Home', icon: Home, color: '#5794A4' },
+    { id: 'about', path: '/about', label: 'About Us', icon: Info, color: '#5794A4' },
+    { id: 'contact', path: '/contact', label: 'Contact Us', icon: Mail, color: '#5794A4' }
   ];
 
   const ikigaiItems = [
-    { id: 'sevendays', label: '7-Day Discovery', icon: Calendar, color: '#64CDD1', description: 'Find your purpose in 7 days', locked: false },
-    { id: 'thirty', label: '30-Day Execution', icon: TrendingUp, color: '#64CDD1', description: 'Build your business', locked: !isUnlocked },
-    { id: 'sixty', label: '60-Day Income', icon: Globe, color: '#64CDD1', description: 'Generate income', locked: !isUnlocked }
+    { id: 'sevendays', path: '/sevendays', label: '7-Day Discovery', icon: Calendar, color: '#64CDD1', description: 'Find your purpose in 7 days', locked: false },
+    { id: 'thirty', path: '/thirty', label: '30-Day Execution', icon: TrendingUp, color: '#64CDD1', description: 'Build your business', locked: !isUnlocked },
+    { id: 'sixty', path: '/sixty', label: '60-Day Income', icon: Globe, color: '#64CDD1', description: 'Generate income', locked: !isUnlocked }
   ];
+
+  const isActive = (path) => location.pathname === path;
 
   const handleLockClick = (e, itemId, itemLabel) => {
     e.stopPropagation();
@@ -50,10 +59,19 @@ const Navbar = ({ activeTab, setActiveTab, user, onLogout }) => {
     setTimeout(() => tooltip.remove(), 2500);
   };
 
+  const handleNavigation = (path, isLocked = false, e) => {
+    if (isLocked) {
+      handleLockClick(e, path, path.replace('/', ''));
+      return;
+    }
+    navigate(path);
+    setIsIkigaiOpen(false);
+  };
+
   return (
     <nav className="fixed top-0 left-0 w-[280px] h-screen bg-white/80 backdrop-blur-md border-r border-[#5794A4]/20 z-50 shadow-xl flex flex-col gap-8 p-6">
       {/* Logo Section */}
-      <div className="flex items-center gap-3 cursor-pointer hover:scale-105 transition-transform group" onClick={() => setActiveTab('home')}>
+      <div className="flex items-center gap-3 cursor-pointer hover:scale-105 transition-transform group" onClick={() => navigate('/')}>
         <div className="relative">
           <img 
             src={logo} 
@@ -93,16 +111,16 @@ const Navbar = ({ activeTab, setActiveTab, user, onLogout }) => {
       <div className="flex flex-col gap-2 flex-1">
         {navItems.map((item) => {
           const Icon = item.icon;
-          const isActive = activeTab === item.id;
+          const active = isActive(item.path);
           return (
             <button
               key={item.id}
               className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
-                isActive 
+                active 
                   ? 'bg-[#5794A4]/20 text-[#0A3948] border-l-2 border-[#0A3948]' 
                   : 'text-[#5794A4] hover:bg-[#5794A4]/10 hover:translate-x-1'
               }`}
-              onClick={() => setActiveTab(item.id)}
+              onClick={() => navigate(item.path)}
             >
               <Icon size={20} />
               <span className="font-medium">{item.label}</span>
@@ -122,7 +140,7 @@ const Navbar = ({ activeTab, setActiveTab, user, onLogout }) => {
           >
             <div className="flex items-center gap-3">
               <Compass size={20} />
-              <span className="font-medium">Ikigai Chart</span>
+              <span className="font-medium">Ikigai Journey</span>
             </div>
             <ChevronDown size={16} className={`transition-transform duration-300 ${isIkigaiOpen ? 'rotate-180' : ''}`} />
           </button>
@@ -131,7 +149,7 @@ const Navbar = ({ activeTab, setActiveTab, user, onLogout }) => {
             <div className="mt-2 ml-6 space-y-1 animate-slide-right">
               {ikigaiItems.map((item) => {
                 const Icon = item.icon;
-                const isActive = activeTab === item.id;
+                const active = isActive(item.path);
                 const isLocked = item.locked;
                 const isAnimating = showLockAnimation && lockedItem === item.id;
                 
@@ -139,15 +157,15 @@ const Navbar = ({ activeTab, setActiveTab, user, onLogout }) => {
                   <button
                     key={item.id}
                     className={`flex items-center justify-between w-full px-4 py-2 rounded-lg transition-all group ${
-                      isActive && !isLocked
+                      active && !isLocked
                         ? 'bg-[#64CDD1]/20 text-[#0A3948]' 
                         : isLocked
                           ? 'text-[#5794A4]/70 cursor-not-allowed hover:bg-transparent'
                           : 'text-[#5794A4] hover:bg-[#64CDD1]/10'
                     }`}
-                    onClick={() => {
+                    onClick={(e) => {
                       if (!isLocked) {
-                        setActiveTab(item.id);
+                        navigate(item.path);
                         setIsIkigaiOpen(false);
                       }
                     }}
@@ -155,7 +173,10 @@ const Navbar = ({ activeTab, setActiveTab, user, onLogout }) => {
                   >
                     <div className="flex items-center gap-3">
                       <Icon size={18} />
-                      <span className="text-sm">{item.label}</span>
+                      <div className="text-left">
+                        <span className="text-sm block">{item.label}</span>
+                        <span className="text-[10px] text-gray-400">{item.description}</span>
+                      </div>
                     </div>
                     {isLocked && (
                       <div className="relative">
@@ -183,6 +204,19 @@ const Navbar = ({ activeTab, setActiveTab, user, onLogout }) => {
             </div>
           )}
         </div>
+
+        {/* Completion Status Indicator */}
+        {!isUnlocked && (
+          <div className="mt-4 p-3 bg-gradient-to-r from-[#64CDD1]/10 to-[#5794A4]/10 rounded-xl border border-[#64CDD1]/30">
+            <div className="flex items-center gap-2">
+              <Target size={14} className="text-[#64CDD1]" />
+              <span className="text-[10px] font-medium text-[#0A3948]">Complete 7-Day Challenge to unlock 30 & 60 Day programs</span>
+            </div>
+            <div className="mt-2 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+              <div className="h-full bg-gradient-to-r from-[#64CDD1] to-[#5794A4] rounded-full w-0 animate-pulse" />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* User Profile */}
@@ -196,7 +230,10 @@ const Navbar = ({ activeTab, setActiveTab, user, onLogout }) => {
         </button>
         <div className="flex-1">
           <div className="font-semibold text-sm text-[#0A3948]">{user?.name || 'Nomad'}</div>
-          <div className="text-xs text-[#5794A4]">Explorer</div>
+          <div className="text-xs text-[#5794A4] flex items-center gap-1">
+            <Award size={10} />
+            <span>{isUnlocked ? 'Champion' : 'Explorer'}</span>
+          </div>
         </div>
         <img 
           src={`https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'Nomad')}&background=0A3948&color=fff&bold=true&length=2`} 
@@ -279,22 +316,6 @@ const Navbar = ({ activeTab, setActiveTab, user, onLogout }) => {
         
         .animate-fade-in-out {
           animation: fadeInOut 2.5s ease-out forwards;
-        }
-        
-        @keyframes goldGlow {
-          0% {
-            filter: drop-shadow(0 0 0px rgba(255,215,0,0));
-          }
-          50% {
-            filter: drop-shadow(0 0 4px rgba(255,215,0,0.8));
-          }
-          100% {
-            filter: drop-shadow(0 0 0px rgba(255,215,0,0));
-          }
-        }
-        
-        .lock-gold {
-          animation: goldGlow 2s ease-in-out infinite;
         }
       `}</style>
     </nav>

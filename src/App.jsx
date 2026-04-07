@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Sevendays from './components/Sevendays';
 import ThirtyDay from './components/Thirtydays';
 import SixtyDay from './components/Sixtydays';
@@ -7,11 +8,12 @@ import Login from './components/Login';
 import Navbar from './components/Navbar';
 import Home from './components/Home';
 import AboutUs from './components/AboutUs';
+import { IkigaiProvider } from './context/IkigaiContext';
+
 
 import './index.css';
 
 function App() {
-  const [activeTab, setActiveTab] = useState('home');
   const [isLoggedIn, setIsLoggedIn] = useState(() => {
     const saved = localStorage.getItem('ikigai_isLoggedIn');
     return saved === 'true';
@@ -31,7 +33,6 @@ function App() {
   const handleLogout = () => {
     setUser(null);
     setIsLoggedIn(false);
-    setActiveTab('home');
     localStorage.removeItem('ikigai_isLoggedIn');
     localStorage.removeItem('ikigai_user');
   };
@@ -41,17 +42,23 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-[#B8E3E6]">
-      <Navbar activeTab={activeTab} setActiveTab={setActiveTab} user={user} onLogout={handleLogout} />
-      <main>
-        {activeTab === 'home' && <Home setActiveTab={setActiveTab} />}
-        {activeTab === 'about' && <AboutUs />}
-        {activeTab === 'contact' && <ContactUs />}
-        {activeTab === 'sevendays' && <Sevendays />}
-        {activeTab === 'thirty' && <ThirtyDay />}
-        {activeTab === 'sixty' && <SixtyDay />}
-      </main>
-    </div>
+    <Router>
+      <IkigaiProvider>
+        <div className="min-h-screen bg-[#B8E3E6]">
+          <Navbar user={user} onLogout={handleLogout} />
+          <main>
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/about" element={<AboutUs />} />
+              <Route path="/contact" element={<ContactUs />} />
+              <Route path="/sevendays" element={<Sevendays />} />
+              <Route path="/thirty" element={<ThirtyDay />} />
+              <Route path="/sixty" element={<SixtyDay />} />
+            </Routes>
+          </main>
+        </div>
+      </IkigaiProvider>
+    </Router>
   );
 }
 
