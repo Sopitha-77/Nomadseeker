@@ -1337,202 +1337,209 @@ export const technicianQuestions = {
     ]
   },
   2: {
-    title: "What You Are Good At",
-    type: "skills",
-    questions: [
-      {
-        id: "t2_q1",
-        question: "What skill do you spend time practicing?",
-        category: "skills",
-        description: "Active investment — where your capability is growing",
-        options: [
-          { value: "A", text: "Improving my core professional skill" },
-          { value: "B", text: "Learning advanced techniques in my field" },
-          { value: "C", text: "Building or creating something using my skill" },
-          { value: "D", text: "Teaching or sharing my knowledge" },
-          { value: "E", text: "Solving real-world problems using my skill" },
-          { value: "F", text: "Learning tools to scale my work" },
-          { value: "G", text: "Personal development and mindset" },
-          { value: "H", text: "Exploring new ways to apply my skill" }
-        ]
-      },
-      {
-        id: "t2_q2",
-        question: "What do people approach you for help with?",
-        category: "skills",
-        description: "External validation — real-world demand signal",
-        options: [
-          { value: "A", text: "My specific skill or expertise" },
-          { value: "B", text: "Solving problems related to my field" },
-          { value: "C", text: "Explaining or teaching concepts" },
-          { value: "D", text: "Giving advice or guidance" },
-          { value: "E", text: "Improving their work or performance" },
-          { value: "F", text: "Creative or innovative ideas" },
-          { value: "G", text: "Planning or structuring work" },
-          { value: "H", text: "Motivation and support" }
-        ]
-      },
-      {
-        id: "t2_q3",
-        question: "What skills or talents come naturally to you?",
-        category: "skills",
-        description: "Innate strengths — low resistance, high leverage",
-        options: [
-          { value: "A", text: "Mastering my core skill quickly" },
-          { value: "B", text: "Understanding complex concepts easily" },
-          { value: "C", text: "Teaching or explaining clearly" },
-          { value: "D", text: "Thinking creatively" },
-          { value: "E", text: "Solving problems logically" },
-          { value: "F", text: "Connecting ideas or people" },
-          { value: "G", text: "Adapting and learning fast" },
-          { value: "H", text: "Taking initiative and responsibility" }
-        ]
-      },
-      {
-        id: "t2_q4",
-        question: "What makes you feel good about yourself?",
-        category: "skills",
-        description: "Purpose trigger — where skill meets meaning",
-        options: [
-          { value: "A", text: "Helping others succeed using my skill" },
-          { value: "B", text: "Solving meaningful problems" },
-          { value: "C", text: "Creating something valuable" },
-          { value: "D", text: "Being recognized for my expertise" },
-          { value: "E", text: "Contributing to something bigger" },
-          { value: "F", text: "Teaching or guiding others" },
-          { value: "G", text: "Seeing long-term impact" },
-          { value: "H", text: "Growing continuously" }
-        ]
-      },
-      {
-        id: "t2_q5",
-        question: "If you had to teach something, what would you teach?",
-        category: "skills",
-        description: "Transferable value — your strongest scalable asset",
-        options: [
-          { value: "A", text: "My core skill in a practical way" },
-          { value: "B", text: "How to apply skills to real-world problems" },
-          { value: "C", text: "How to think and solve problems" },
-          { value: "D", text: "How to improve and grow in my field" },
-          { value: "E", text: "How to build something using this skill" },
-          { value: "F", text: "How to turn skills into income" },
-          { value: "G", text: "How to collaborate and create impact" },
-          { value: "H", text: "How to stay consistent and disciplined" }
-        ]
-      },
-      {
-        id: "t2_q6",
-        text: "What achievement are you proud of?",
-        description: "Execution proof — evidence of capability and impact",
-        options: [
-          { value: "A", text: "Mastering a valuable skill" },
-          { value: "B", text: "Solving a real problem" },
-          { value: "C", text: "Building or creating something useful" },
-          { value: "D", text: "Helping others achieve results" },
-          { value: "E", text: "Being recognized for my work" },
-          { value: "F", text: "Teaching or mentoring someone" },
-          { value: "G", text: "Contributing to a bigger project or team" },
-          { value: "H", text: "Achieving personal growth or discipline" }
-        ]
-      }
-    ]
-  },
+  title: "What You Are Good At",
+  type: "skills",
+  questions: [
+    {
+      id: "t2_q1",
+      question: "What skill do you spend time practicing?",
+      category: "skills",
+      description: "Active investment — where your capability is growing",
+      options: [
+        { value: "A", text: "Improving my core professional skill" },
+        { value: "B", text: "Learning advanced techniques in my field" },
+        { value: "C", text: "Building or creating something using my skill" },
+        { value: "D", text: "Teaching or sharing my knowledge" },
+        { value: "E", text: "Solving real-world problems using my skill" },
+        { value: "F", text: "Learning tools to scale my work" },
+        { value: "G", text: "Personal development and mindset" },
+        { value: "H", text: "Exploring new ways to apply my skill" }
+      ]
+    },
+    {
+      id: "t2_q2",
+      question: "What do people approach you for help with?",
+      category: "skills",
+      description: "External validation — real-world demand signal",
+      options: [
+        { value: "A", text: "My specific skill or expertise" },
+        { value: "B", text: "Solving problems related to my field" },
+        { value: "C", text: "Explaining or teaching concepts" },
+        { value: "D", text: "Giving advice or guidance" },
+        { value: "E", text: "Improving their work or performance" },
+        { value: "F", text: "Creative or innovative ideas" },
+        { value: "G", text: "Planning or structuring work" },
+        { value: "H", text: "Motivation and support" }
+      ]
+    },
+    {
+      id: "t2_q3",
+      question: "What skills or talents come naturally to you?",
+      category: "skills",
+      description: "Innate strengths — low resistance, high leverage",
+      options: [
+        { value: "A", text: "Mastering my core skill quickly" },
+        { value: "B", text: "Understanding complex concepts easily" },
+        { value: "C", text: "Teaching or explaining clearly" },
+        { value: "D", text: "Thinking creatively" },
+        { value: "E", text: "Solving problems logically" },
+        { value: "F", text: "Connecting ideas or people" },
+        { value: "G", text: "Adapting and learning fast" },
+        { value: "H", text: "Taking initiative and responsibility" }
+      ]
+    },
+    {
+      id: "t2_q4",
+      question: "What makes you feel good about yourself?",
+      category: "skills",
+      description: "Purpose trigger — where skill meets meaning",
+      options: [
+        { value: "A", text: "Helping others succeed using my skill" },
+        { value: "B", text: "Solving meaningful problems" },
+        { value: "C", text: "Creating something valuable" },
+        { value: "D", text: "Being recognized for my expertise" },
+        { value: "E", text: "Contributing to something bigger" },
+        { value: "F", text: "Teaching or guiding others" },
+        { value: "G", text: "Seeing long-term impact" },
+        { value: "H", text: "Growing continuously" }
+      ]
+    },
+    {
+      id: "t2_q5",
+      question: "If you had to teach something, what would you teach?",
+      category: "skills",
+      description: "Transferable value — your strongest scalable asset",
+      options: [
+        { value: "A", text: "My core skill in a practical way" },
+        { value: "B", text: "How to apply skills to real-world problems" },
+        { value: "C", text: "How to think and solve problems" },
+        { value: "D", text: "How to improve and grow in my field" },
+        { value: "E", text: "How to build something using this skill" },
+        { value: "F", text: "How to turn skills into income" },
+        { value: "G", text: "How to collaborate and create impact" },
+        { value: "H", text: "How to stay consistent and disciplined" }
+      ]
+    },
+    {
+      id: "t2_q6",
+      question: "What achievement are you proud of?",
+      category: "skills",
+      description: "Execution proof — evidence of capability and impact",
+      options: [
+        { value: "A", text: "Mastering a valuable skill" },
+        { value: "B", text: "Solving a real problem" },
+        { value: "C", text: "Building or creating something useful" },
+        { value: "D", text: "Helping others achieve results" },
+        { value: "E", text: "Being recognized for my work" },
+        { value: "F", text: "Teaching or mentoring someone" },
+        { value: "G", text: "Contributing to a bigger project or team" },
+        { value: "H", text: "Achieving personal growth or discipline" }
+      ]
+    }
+  ]
+},
   3: {
-    title: "What You Can Be Paid For",
-    type: "paid",
-    questions: [
-      {
-        id: "t3_q1",
-        text: "What opportunities are available to you?",
-        description: "Access points — where your skill can be applied immediately",
-        options: [
-          { value: "A", text: "Offering my skill as a service to others" },
-          { value: "B", text: "Collaborating with people who need my expertise" },
-          { value: "C", text: "Joining a team or startup aligned with my skill" },
-          { value: "D", text: "Building a small project using my skill" },
-          { value: "E", text: "Teaching or sharing my knowledge" },
-          { value: "F", text: "Solving a problem I've experienced using my skill" },
-          { value: "G", text: "Partnering with someone who complements my skill" },
-          { value: "H", text: "Contributing to an existing platform or community" }
-        ]
-      },
-      {
-        id: "t3_q2",
-        text: "What do people want to buy that you could offer?",
-        description: "Demand clarity — monetization potential of your skill",
-        options: [
-          { value: "A", text: "A service that solves their problem" },
-          { value: "B", text: "Expertise or professional guidance" },
-          { value: "C", text: "A product or solution built from my skill" },
-          { value: "D", text: "Knowledge, training, or courses" },
-          { value: "E", text: "Faster or more efficient results" },
-          { value: "F", text: "Creative or innovative solutions" },
-          { value: "G", text: "Systems or tools that simplify their work" },
-          { value: "H", text: "Reliable support or execution" }
-        ]
-      },
-      {
-        id: "t3_q3",
-        text: "Can you make a good living doing this work for a long time?",
-        description: "Sustainability + scalability of your skill",
-        options: [
-          { value: "A", text: "Yes, if I scale it into a system or business" },
-          { value: "B", text: "Yes, if I continuously improve and adapt" },
-          { value: "C", text: "Maybe, if I find the right audience" },
-          { value: "D", text: "Yes, if I collaborate with the right people" },
-          { value: "E", text: "Not sure, I need to validate demand" },
-          { value: "F", text: "Yes, if I turn it into a product or platform" },
-          { value: "G", text: "Yes, if I stay consistent over time" },
-          { value: "H", text: "I need guidance to make it sustainable" }
-        ]
-      },
-      {
-        id: "t3_q4",
-        text: "Do you know anybody who is getting paid to do this type of work?",
-        description: "Proof of possibility — reduces uncertainty",
-        options: [
-          { value: "A", text: "Yes, I've seen people doing exactly this" },
-          { value: "B", text: "Yes, but I don't know how they started" },
-          { value: "C", text: "I've seen similar work in the market" },
-          { value: "D", text: "I follow people online doing this successfully" },
-          { value: "E", text: "I know someone personally doing it" },
-          { value: "F", text: "I've studied case studies or examples" },
-          { value: "G", text: "I believe it's possible even if I haven't seen it" },
-          { value: "H", text: "No, I'm unsure if it's viable" }
-        ]
-      },
-      {
-        id: "t3_q5",
-        text: "What do people need?",
-        description: "Problem-awareness — where your skill creates impact",
-        options: [
-          { value: "A", text: "Solutions to real problems" },
-          { value: "B", text: "Faster and easier ways to achieve results" },
-          { value: "C", text: "Guidance and expert knowledge" },
-          { value: "D", text: "Tools or systems to improve efficiency" },
-          { value: "E", text: "Better quality or outcomes" },
-          { value: "F", text: "Innovation in existing processes" },
-          { value: "G", text: "Reliable support and execution" },
-          { value: "H", text: "Help in achieving their goals" }
-        ]
-      },
-      {
-        id: "t3_q6",
-        text: "Which jobs, positions or tasks spark your interest?",
-        description: "Role clarity — how you want to apply your skill",
-        options: [
-          { value: "A", text: "Building or creating something impactful" },
-          { value: "B", text: "Solving problems in real-world scenarios" },
-          { value: "C", text: "Working directly with people or clients" },
-          { value: "D", text: "Strategy and planning" },
-          { value: "E", text: "Collaborating with teams" },
-          { value: "F", text: "Teaching, mentoring, or guiding" },
-          { value: "G", text: "Managing or scaling operations" },
-          { value: "H", text: "Experimenting with ideas and innovation" }
-        ]
-      }
-    ]
-  },
+  title: "What You Can Be Paid For",
+  type: "paid",
+  questions: [
+    {
+      id: "t3_q1",
+      question: "What opportunities are available to you?",
+      category: "paid",
+      description: "Access points — where your skill can be applied immediately",
+      options: [
+        { value: "A", text: "Offering my skill as a service to others" },
+        { value: "B", text: "Collaborating with people who need my expertise" },
+        { value: "C", text: "Joining a team or startup aligned with my skill" },
+        { value: "D", text: "Building a small project using my skill" },
+        { value: "E", text: "Teaching or sharing my knowledge" },
+        { value: "F", text: "Solving a problem I've experienced using my skill" },
+        { value: "G", text: "Partnering with someone who complements my skill" },
+        { value: "H", text: "Contributing to an existing platform or community" }
+      ]
+    },
+    {
+      id: "t3_q2",
+      question: "What do people want to buy that you could offer?",
+      category: "paid",
+      description: "Demand clarity — monetization potential of your skill",
+      options: [
+        { value: "A", text: "A service that solves their problem" },
+        { value: "B", text: "Expertise or professional guidance" },
+        { value: "C", text: "A product or solution built from my skill" },
+        { value: "D", text: "Knowledge, training, or courses" },
+        { value: "E", text: "Faster or more efficient results" },
+        { value: "F", text: "Creative or innovative solutions" },
+        { value: "G", text: "Systems or tools that simplify their work" },
+        { value: "H", text: "Reliable support or execution" }
+      ]
+    },
+    {
+      id: "t3_q3",
+      question: "Can you make a good living doing this work for a long time?",
+      category: "paid",
+      description: "Sustainability + scalability of your skill",
+      options: [
+        { value: "A", text: "Yes, if I scale it into a system or business" },
+        { value: "B", text: "Yes, if I continuously improve and adapt" },
+        { value: "C", text: "Maybe, if I find the right audience" },
+        { value: "D", text: "Yes, if I collaborate with the right people" },
+        { value: "E", text: "Not sure, I need to validate demand" },
+        { value: "F", text: "Yes, if I turn it into a product or platform" },
+        { value: "G", text: "Yes, if I stay consistent over time" },
+        { value: "H", text: "I need guidance to make it sustainable" }
+      ]
+    },
+    {
+      id: "t3_q4",
+      question: "Do you know anybody who is getting paid to do this type of work?",
+      category: "paid",
+      description: "Proof of possibility — reduces uncertainty",
+      options: [
+        { value: "A", text: "Yes, I've seen people doing exactly this" },
+        { value: "B", text: "Yes, but I don't know how they started" },
+        { value: "C", text: "I've seen similar work in the market" },
+        { value: "D", text: "I follow people online doing this successfully" },
+        { value: "E", text: "I know someone personally doing it" },
+        { value: "F", text: "I've studied case studies or examples" },
+        { value: "G", text: "I believe it's possible even if I haven't seen it" },
+        { value: "H", text: "No, I'm unsure if it's viable" }
+      ]
+    },
+    {
+      id: "t3_q5",
+      question: "What do people need?",
+      category: "paid",
+      description: "Problem-awareness — where your skill creates impact",
+      options: [
+        { value: "A", text: "Solutions to real problems" },
+        { value: "B", text: "Faster and easier ways to achieve results" },
+        { value: "C", text: "Guidance and expert knowledge" },
+        { value: "D", text: "Tools or systems to improve efficiency" },
+        { value: "E", text: "Better quality or outcomes" },
+        { value: "F", text: "Innovation in existing processes" },
+        { value: "G", text: "Reliable support and execution" },
+        { value: "H", text: "Help in achieving their goals" }
+      ]
+    },
+    {
+      id: "t3_q6",
+      question: "Which jobs, positions or tasks spark your interest?",
+      category: "paid",
+      description: "Role clarity — how you want to apply your skill",
+      options: [
+        { value: "A", text: "Building or creating something impactful" },
+        { value: "B", text: "Solving problems in real-world scenarios" },
+        { value: "C", text: "Working directly with people or clients" },
+        { value: "D", text: "Strategy and planning" },
+        { value: "E", text: "Collaborating with teams" },
+        { value: "F", text: "Teaching, mentoring, or guiding" },
+        { value: "G", text: "Managing or scaling operations" },
+        { value: "H", text: "Experimenting with ideas and innovation" }
+      ]
+    }
+  ]
+},
   4: {
     title: "What The World Needs",
     type: "need",

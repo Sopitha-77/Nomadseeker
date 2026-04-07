@@ -1,163 +1,106 @@
-// src/components/QuestionCard.jsx
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Check, Sparkles, Brain, Lightbulb, Star } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Check, Sparkles, Lightbulb, Zap } from 'lucide-react';
 
-const QuestionCard = ({ 
-  question, 
-  index, 
-  total, 
-  selectedValue, 
-  onSelect, 
-  onNext, 
-  onPrev,
-  isLast
-}) => {
+const QuestionCard = ({ question, index, total, selectedValue, onSelect, onNext, onPrev, isLast }) => {
   const [direction, setDirection] = useState('right');
   const [selectedOption, setSelectedOption] = useState(null);
   const [showFeedback, setShowFeedback] = useState(false);
-  const [selectedAnswerText, setSelectedAnswerText] = useState('');
+  const [justSelected, setJustSelected] = useState(null);
 
-  // Reset selected option when question changes
   useEffect(() => {
     setSelectedOption(selectedValue || null);
     setShowFeedback(false);
+    setJustSelected(null);
   }, [question, selectedValue]);
 
   const handleSelect = (optionText) => {
     setSelectedOption(optionText);
-    setSelectedAnswerText(optionText);
+    setJustSelected(optionText);
     setShowFeedback(true);
-    
-    // Add haptic feedback effect
-    const btn = document.activeElement;
-    if (btn) btn.blur();
-    
-    // Small delay before calling onSelect for smooth animation
-    setTimeout(() => {
-      onSelect(optionText);
-    }, 150);
+    setTimeout(() => { onSelect(optionText); setJustSelected(null); }, 150);
   };
 
   const handleNext = () => {
-    if (selectedOption && onNext) {
-      setDirection('left');
-      setShowFeedback(false);
-      setTimeout(() => {
-        onNext();
-        setDirection('right');
-      }, 300);
-    }
-  };
-  
-  const handlePrev = () => {
-    if (onPrev) {
-      setDirection('right');
-      setShowFeedback(false);
-      setTimeout(() => {
-        onPrev();
-        setDirection('left');
-      }, 300);
-    }
-  };
-  
-  const variants = {
-    enter: (direction) => ({
-      x: direction === 'right' ? 400 : -400,
-      opacity: 0,
-      scale: 0.95
-    }),
-    center: {
-      x: 0,
-      opacity: 1,
-      scale: 1
-    },
-    exit: (direction) => ({
-      x: direction === 'right' ? -400 : 400,
-      opacity: 0,
-      scale: 0.95
-    })
+    if (!selectedOption) return;
+    setDirection('left');
+    setShowFeedback(false);
+    setTimeout(() => { onNext(); setDirection('right'); }, 280);
   };
 
-  // Progress percentage
+  const handlePrev = () => {
+    if (!onPrev || index === 0) return;
+    setDirection('right');
+    setShowFeedback(false);
+    setTimeout(() => { onPrev(); setDirection('left'); }, 280);
+  };
+
   const progressPercent = ((index + 1) / total) * 100;
 
-  // Get motivational message based on progress
-  const getMotivationalMessage = () => {
-    if (index === 0) return "🎯 Let's begin! Take your time to reflect.";
-    if (index === total - 1) return "🏁 Final question! You're almost there!";
-    if (index === Math.floor(total / 2)) return "⭐ Halfway there! You're doing great!";
-    return null;
-  };
+  const hints = [
+    "Take your time — honest answers matter most.",
+    "Think about what energises you naturally.",
+    "There are no wrong answers here.",
+    "Trust your first instinct.",
+  ];
 
-  const motivationalMessage = getMotivationalMessage();
+  const variants = {
+    enter: (d) => ({ x: d === 'right' ? 300 : -300, opacity: 0, scale: 0.97 }),
+    center: { x: 0, opacity: 1, scale: 1 },
+    exit: (d) => ({ x: d === 'right' ? -300 : 300, opacity: 0, scale: 0.97 }),
+  };
 
   return (
     <div className="w-full">
-      {/* Progress Section */}
-      <div className="mb-8">
-        <div className="flex justify-between items-center mb-3">
+      {/* Progress header */}
+      <div className="mb-6">
+        <div className="flex justify-between items-center mb-2.5">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-r from-downy to-horizon flex items-center justify-center shadow-md">
-              <Brain className="w-4 h-4 text-white" />
+            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#64CDD1] to-[#5794A4] flex items-center justify-center shadow-md shadow-cyan-200">
+              <Zap size={12} className="text-white" />
             </div>
-            <span className="text-sm font-semibold text-tiber">
-              Question {index + 1}
-            </span>
+            <span className="text-sm font-bold text-[#0A3948]">Question {index + 1}</span>
           </div>
-          <span className="text-sm text-gray-400 font-medium">
-            {index + 1} / {total}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-gray-400">{index + 1} / {total}</span>
+            <div className="w-16 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+              <motion.div
+                className="h-full rounded-full bg-gradient-to-r from-[#64CDD1] to-[#5794A4]"
+                initial={{ width: 0 }}
+                animate={{ width: `${progressPercent}%` }}
+                transition={{ duration: 0.5 }}
+              />
+            </div>
+          </div>
         </div>
-        
-        {/* Animated Progress Bar */}
-        <div className="relative h-2 bg-gray-100 rounded-full overflow-hidden">
-          <motion.div
-            className="h-full bg-gradient-to-r from-downy to-horizon rounded-full"
-            initial={{ width: 0 }}
-            animate={{ width: `${progressPercent}%` }}
-            transition={{ duration: 0.5, ease: "easeOut" }}
-          />
-          <motion.div
-            className="absolute top-0 left-0 h-full w-20 bg-white/30 rounded-full"
-            animate={{ x: ["0%", "500%"] }}
-            transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
-            style={{ width: "30%" }}
-          />
-        </div>
-        
-        {/* Question indicators */}
-        <div className="flex gap-1 mt-3">
+
+        {/* Dot indicators */}
+        <div className="flex gap-1.5">
           {Array.from({ length: total }).map((_, i) => (
             <motion.div
               key={i}
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
-              transition={{ delay: i * 0.05 }}
-              className={`h-1 rounded-full transition-all duration-300 ${
-                i <= index 
-                  ? 'bg-gradient-to-r from-downy to-horizon' 
-                  : 'bg-gray-200'
-              } ${i === index ? 'w-8' : 'w-4'}`}
+              transition={{ delay: i * 0.03 }}
+              className={`h-1 rounded-full transition-all duration-400 ${
+                i < index ? 'bg-[#64CDD1]' : i === index ? 'bg-[#0A3948] w-6' : 'bg-gray-150'
+              } ${i !== index ? 'w-3' : ''}`}
             />
           ))}
         </div>
       </div>
-      
-      {/* Motivational Message */}
-      {motivationalMessage && (
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-4 text-center"
-        >
-          <span className="inline-flex items-center gap-2 text-xs bg-gradient-to-r from-downy/20 to-horizon/20 px-3 py-1.5 rounded-full text-downy font-medium">
-            <Sparkles className="w-3 h-3" />
-            {motivationalMessage}
+
+      {/* Motivational pill */}
+      {(index === 0 || index === Math.floor(total / 2) || index === total - 1) && (
+        <motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }}
+          className="flex justify-center mb-4">
+          <span className="inline-flex items-center gap-1.5 text-[11px] bg-gradient-to-r from-[#64CDD1]/15 to-[#5794A4]/15 text-[#5794A4] px-3 py-1 rounded-full font-semibold border border-[#64CDD1]/20">
+            <Sparkles size={10} />
+            {index === 0 ? "Let's discover your path!" : index === total - 1 ? "Last one — almost there!" : "You're halfway through!"}
           </span>
         </motion.div>
       )}
-      
+
       <AnimatePresence mode="wait" custom={direction}>
         <motion.div
           key={index}
@@ -166,172 +109,136 @@ const QuestionCard = ({
           initial="enter"
           animate="center"
           exit="exit"
-          transition={{ duration: 0.35, ease: [0.4, 0, 0.2, 1] }}
-          className="space-y-6"
+          transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+          className="space-y-4"
         >
-          {/* Question Card */}
-          <div className="relative overflow-hidden glass-card rounded-2xl p-8 shadow-xl border border-white/50">
-            {/* Decorative background elements */}
-            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-downy/5 to-transparent rounded-full blur-2xl" />
-            <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-horizon/5 to-transparent rounded-full blur-2xl" />
-            
-            {/* Question Icon */}
-            <div className="flex justify-center mb-4">
-              <div className="w-12 h-12 rounded-full bg-gradient-to-r from-downy/20 to-horizon/20 flex items-center justify-center">
-                <Lightbulb className="w-6 h-6 text-downy" />
+          {/* Question */}
+          <div className="relative overflow-hidden bg-white rounded-2xl p-7 shadow-lg shadow-gray-100 border border-gray-100">
+            <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-bl from-[#B8E3E6]/30 to-transparent rounded-full -translate-y-10 translate-x-10 blur-2xl pointer-events-none" />
+            <div className="absolute bottom-0 left-0 w-28 h-28 bg-gradient-to-tr from-[#5794A4]/10 to-transparent rounded-full translate-y-8 -translate-x-8 blur-xl pointer-events-none" />
+
+            <div className="flex justify-center mb-5">
+              <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-[#B8E3E6] to-[#64CDD1]/40 flex items-center justify-center shadow-sm">
+                <Lightbulb size={20} className="text-[#5794A4]" />
               </div>
             </div>
-            
-            {/* Question Text */}
-            <p className="text-xl md:text-2xl font-bold text-tiber text-center mb-3 leading-relaxed">
+
+            <h3 className="text-xl font-black text-[#0A3948] text-center mb-2 leading-snug tracking-tight">
               {question.text}
-            </p>
-            
+            </h3>
             {question.description && (
-              <p className="text-sm text-gray-500 text-center mb-8 max-w-md mx-auto">
+              <p className="text-sm text-gray-400 text-center max-w-sm mx-auto leading-relaxed">
                 {question.description}
               </p>
             )}
-            
-            {/* Options Grid */}
-            <div className="grid gap-3 mt-4">
-              {question.options.map((option, optIndex) => {
-                const isSelected = selectedOption === option.text;
-                return (
-                  <motion.button
-                    key={option.value}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: optIndex * 0.05 }}
-                    onClick={() => handleSelect(option.text)}
-                    className={`
-                      group relative w-full text-left p-4 rounded-xl transition-all duration-300
-                      ${isSelected 
-                        ? 'bg-gradient-to-r from-downy/15 to-horizon/15 border-2 border-downy shadow-lg scale-[1.01]' 
-                        : 'bg-white border-2 border-gray-100 hover:border-downy/50 hover:shadow-md hover:scale-[1.01]'
-                      }
-                    `}
-                    whileHover={{ scale: 1.01 }}
-                    whileTap={{ scale: 0.99 }}
-                  >
-                    {/* Selection indicator */}
-                    {isSelected && (
-                      <motion.div
-                        initial={{ scale: 0, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-r from-downy to-horizon rounded-full flex items-center justify-center shadow-lg"
-                      >
-                        <Check className="w-3 h-3 text-white" />
-                      </motion.div>
-                    )}
-                    
-                    <div className="flex items-start gap-4">
-                      {/* Option letter badge */}
-                      <div className={`
-                        w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm transition-all duration-300
-                        ${isSelected 
-                          ? 'bg-gradient-to-r from-downy to-horizon text-white shadow-md' 
-                          : 'bg-gray-100 text-gray-500 group-hover:bg-downy/20 group-hover:text-downy'
-                        }
-                      `}>
-                        {option.value}
-                      </div>
-                      <span className={`flex-1 text-gray-700 leading-relaxed ${isSelected ? 'font-medium' : ''}`}>
-                        {option.text}
-                      </span>
-                    </div>
-                    
-                    {/* Hover ripple effect */}
-                    {!isSelected && (
-                      <motion.div
-                        className="absolute inset-0 rounded-xl bg-downy/0"
-                        whileHover={{ backgroundColor: "rgba(100, 205, 209, 0.05)" }}
-                        transition={{ duration: 0.2 }}
-                      />
-                    )}
-                  </motion.button>
-                );
-              })}
-            </div>
-            
-            {/* Selected feedback animation */}
-            <AnimatePresence>
-              {showFeedback && selectedOption && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  className="mt-6 text-center"
-                >
-                  <div className="inline-flex items-center gap-2 text-xs text-downy font-medium">
-                    <Check className="w-3 h-3" />
-                    <span>Answer selected</span>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
           </div>
-          
-          {/* Navigation Buttons */}
-          <div className="flex gap-4">
+
+          {/* Options */}
+          <div className="space-y-2">
+            {question.options.map((option, i) => {
+              const isSelected = selectedOption === option.text;
+              const isNew = justSelected === option.text;
+              return (
+                <motion.button
+                  key={option.value}
+                  initial={{ opacity: 0, x: -12 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.04 }}
+                  onClick={() => handleSelect(option.text)}
+                  className={`group relative w-full text-left p-3.5 rounded-xl transition-all duration-250 flex items-center gap-3.5 ${
+                    isSelected
+                      ? 'bg-gradient-to-r from-[#64CDD1]/12 to-[#5794A4]/8 border-2 border-[#64CDD1] shadow-md shadow-cyan-100'
+                      : 'bg-white border border-gray-100 hover:border-[#64CDD1]/50 hover:shadow-sm hover:bg-[#F8FEFF]'
+                  }`}
+                  whileHover={{ scale: 1.007 }}
+                  whileTap={{ scale: 0.995 }}
+                >
+                  {/* Letter badge */}
+                  <div className={`w-8 h-8 rounded-lg flex-shrink-0 flex items-center justify-center font-bold text-xs transition-all duration-250 ${
+                    isSelected
+                      ? 'bg-gradient-to-br from-[#64CDD1] to-[#5794A4] text-white shadow-md shadow-cyan-200'
+                      : 'bg-gray-100 text-gray-400 group-hover:bg-[#64CDD1]/15 group-hover:text-[#5794A4]'
+                  }`}>
+                    {isSelected ? <Check size={13} strokeWidth={3} /> : option.value}
+                  </div>
+
+                  <span className={`flex-1 text-sm leading-relaxed transition-all duration-200 ${
+                    isSelected ? 'text-[#0A3948] font-semibold' : 'text-gray-600'
+                  }`}>
+                    {option.text}
+                  </span>
+
+                  {isSelected && (
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ type: 'spring', stiffness: 400 }}
+                      className="w-5 h-5 rounded-full bg-[#64CDD1] flex items-center justify-center flex-shrink-0"
+                    >
+                      <Check size={10} className="text-white" strokeWidth={3} />
+                    </motion.div>
+                  )}
+                </motion.button>
+              );
+            })}
+          </div>
+
+          {/* Feedback */}
+          <AnimatePresence>
+            {showFeedback && selectedOption && (
+              <motion.div
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                className="flex justify-center"
+              >
+                <span className="inline-flex items-center gap-1.5 text-[11px] text-[#64CDD1] font-semibold">
+                  <Check size={11} strokeWidth={3} /> Answer recorded
+                </span>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Navigation */}
+          <div className="flex gap-3 pt-1">
             <motion.button
               onClick={handlePrev}
               disabled={index === 0}
-              className={`
-                flex-1 py-3.5 rounded-xl font-medium transition-all duration-300
-                flex items-center justify-center gap-2
-                ${index !== 0 
-                  ? 'bg-white border-2 border-gray-200 text-gray-600 hover:border-downy/50 hover:text-downy hover:shadow-md' 
-                  : 'bg-gray-100 border-2 border-gray-100 text-gray-300 cursor-not-allowed'
-                }
-              `}
-              whileHover={index !== 0 ? { scale: 1.02 } : {}}
-              whileTap={index !== 0 ? { scale: 0.98 } : {}}
+              className={`flex-1 py-3.5 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 transition-all duration-200 ${
+                index !== 0
+                  ? 'bg-white border border-gray-200 text-gray-500 hover:border-[#64CDD1]/50 hover:text-[#5794A4] hover:shadow-sm'
+                  : 'bg-gray-50 border border-gray-100 text-gray-200 cursor-not-allowed'
+              }`}
+              whileHover={index !== 0 ? { scale: 1.01 } : {}}
+              whileTap={index !== 0 ? { scale: 0.99 } : {}}
             >
-              <ChevronLeft className="w-4 h-4" />
-              Previous
+              <ChevronLeft size={16} /> Previous
             </motion.button>
-            
+
             <motion.button
               onClick={handleNext}
               disabled={!selectedOption}
-              className={`
-                flex-1 py-3.5 rounded-xl font-semibold transition-all duration-300
-                flex items-center justify-center gap-2
-                ${selectedOption 
-                  ? 'bg-gradient-to-r from-horizon to-downy text-white shadow-lg hover:shadow-xl' 
-                  : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                }
-              `}
-              whileHover={selectedOption ? { scale: 1.02 } : {}}
+              className={`flex-[2] py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all duration-200 ${
+                selectedOption
+                  ? 'bg-gradient-to-r from-[#5794A4] to-[#64CDD1] text-white shadow-lg shadow-cyan-200 hover:shadow-xl hover:shadow-cyan-300'
+                  : 'bg-gray-100 text-gray-300 cursor-not-allowed'
+              }`}
+              whileHover={selectedOption ? { scale: 1.01 } : {}}
               whileTap={selectedOption ? { scale: 0.98 } : {}}
             >
               {isLast ? (
-                <>
-                  <Star className="w-4 h-4" />
-                  Complete Day
-                </>
+                <><Sparkles size={15} /> Complete Day</>
               ) : (
-                <>
-                  Next
-                  <ChevronRight className="w-4 h-4" />
-                </>
+                <>Next <ChevronRight size={15} /></>
               )}
             </motion.button>
           </div>
-          
-          {/* Progress Tip */}
-          <div className="text-center">
-            <p className="text-[11px] text-gray-400 flex items-center justify-center gap-1">
-              <Lightbulb className="w-3 h-3" />
-              {!selectedOption 
-                ? "Select an option to continue" 
-                : isLast 
-                  ? "Ready to complete this day's journey!" 
-                  : "Click Next to continue your discovery"
-              }
-            </p>
-          </div>
+
+          {/* Hint */}
+          <p className="text-center text-[11px] text-gray-350 flex items-center justify-center gap-1">
+            <Lightbulb size={10} className="text-amber-300" />
+            {!selectedOption ? hints[index % hints.length] : isLast ? "Ready to complete today's journey!" : "Great — tap Next to continue"}
+          </p>
         </motion.div>
       </AnimatePresence>
     </div>
