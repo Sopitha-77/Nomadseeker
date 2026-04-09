@@ -9,6 +9,7 @@ import Navbar from './components/Navbar';
 import Home from './components/Home';
 import AboutUs from './components/AboutUs';
 import { IkigaiProvider } from './context/IkigaiContext';
+import Profile from './pages/Profile';
 
 
 import './index.css';
@@ -54,6 +55,7 @@ function App() {
               <Route path="/sevendays" element={<Sevendays />} />
               <Route path="/thirty" element={<ThirtyDay />} />
               <Route path="/sixty" element={<SixtyDay />} />
+              <Route path="/profile" element={<Profile />} />
             </Routes>
           </main>
         </div>

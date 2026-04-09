@@ -87,3 +87,18 @@
     animation: pulse-glow 1.5s infinite;
   }
 }
+/* Ensure all buttons are visible */
+button {
+  cursor: pointer;
+}
+
+/* Make sure glass-card doesn't hide content */
+.glass-card {
+  background: rgba(255, 255, 255, 0.95) !important;
+}
+
+/* Ensure options are visible */
+.space-y-2\.5 > * {
+  display: block !important;
+  visibility: visible !important;
+}

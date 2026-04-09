@@ -10,7 +10,7 @@ export const entrepreneurQuestions = {
         id: "e1_q1",
         question: "What makes you smile?",
         category: "love",
-        description: "Emotional reward system — identifies what kind of progress fulfills you",
+        description: "What makes you smile?",
         options: [
           { value: "A", text: "Working with like-minded people on an idea" },
           { value: "B", text: "Seeing an idea come to life with a team" },
@@ -1540,40 +1540,42 @@ export const technicianQuestions = {
     }
   ]
 },
-  4: {
-    title: "What The World Needs",
-    type: "need",
-    questions: [
-      {
-        id: "t4_q1",
-        text: "How do you help others?",
-        description: "Current application of your skill — real-world value expression",
-        options: [
-          { value: "A", text: "By using my skill to solve their problems" },
-          { value: "B", text: "By teaching or sharing my knowledge" },
-          { value: "C", text: "By guiding or mentoring them" },
-          { value: "D", text: "By creating something useful for them" },
-          { value: "E", text: "By simplifying complex things" },
-          { value: "F", text: "By supporting their growth" },
-          { value: "G", text: "By connecting them with the right people" },
-          { value: "H", text: "By helping them take action" }
-        ]
-      },
-      {
-        id: "t4_q2",
-        text: "How could you be more involved in your community?",
-        description: "Expansion — where your skill meets collective impact",
-        options: [
-          { value: "A", text: "Offering my skill to solve real community problems" },
-          { value: "B", text: "Collaborating with like-minded people" },
-          { value: "C", text: "Sharing knowledge through content or sessions" },
-          { value: "D", text: "Building something valuable for the community" },
-          { value: "E", text: "Mentoring or guiding others" },
-          { value: "F", text: "Participating in meaningful projects" },
-          { value: "G", text: "Creating opportunities for others" },
-          { value: "H", text: "Leading or organizing initiatives" }
-        ]
-      },
+  4:{
+  title: "What The World Needs",
+  type: "need",
+  questions: [
+    {
+      id: "t4_q1",
+      question: "How do you help others?",  // ← Changed from 'text' to 'question'
+      category: "need",
+      description: "Current application of your skill — real-world value expression",
+      options: [
+        { value: "A", text: "By using my skill to solve their problems" },
+        { value: "B", text: "By teaching or sharing my knowledge" },
+        { value: "C", text: "By guiding or mentoring them" },
+        { value: "D", text: "By creating something useful for them" },
+        { value: "E", text: "By simplifying complex things" },
+        { value: "F", text: "By supporting their growth" },
+        { value: "G", text: "By connecting them with the right people" },
+        { value: "H", text: "By helping them take action" }
+      ]
+    },
+    {
+      id: "t4_q2",
+      question: "How could you be more involved in your community?",  // ← Changed
+      category: "need",
+      description: "Expansion — where your skill meets collective impact",
+      options: [
+        { value: "A", text: "Offering my skill to solve real community problems" },
+        { value: "B", text: "Collaborating with like-minded people" },
+        { value: "C", text: "Sharing knowledge through content or sessions" },
+        { value: "D", text: "Building something valuable for the community" },
+        { value: "E", text: "Mentoring or guiding others" },
+        { value: "F", text: "Participating in meaningful projects" },
+        { value: "G", text: "Creating opportunities for others" },
+        { value: "H", text: "Leading or organizing initiatives" }
+      ]
+    },
       {
         id: "t4_q3",
         text: "Is there something about the way the world works that you want to change?",
@@ -1637,39 +1639,41 @@ export const technicianQuestions = {
     ]
   },
   5: {
-    title: "Your Passion in Action",
-    type: "love",
-    questions: [
-      {
-        id: "t5_q1",
-        text: "What technical challenges excite you most?",
-        description: "Passion-driven technical interests",
-        options: [
-          { value: "A", text: "Building efficient and scalable systems" },
-          { value: "B", text: "Solving complex technical problems" },
-          { value: "C", text: "Creating tools that help people work better" },
-          { value: "D", text: "Innovating with new technologies" },
-          { value: "E", text: "Optimizing existing solutions for better performance" },
-          { value: "F", text: "Teaching technical concepts to others" },
-          { value: "G", text: "Building products that solve real needs" },
-          { value: "H", text: "Creating elegant technical solutions" }
-        ]
-      },
-      {
-        id: "t5_q2",
-        text: "How do you express your passion through your work?",
-        description: "Professional passion expression",
-        options: [
-          { value: "A", text: "Building high-quality, reliable solutions" },
-          { value: "B", text: "Solving problems that matter to people" },
-          { value: "C", text: "Creating tools that make work easier" },
-          { value: "D", text: "Teaching and mentoring others in my field" },
-          { value: "E", text: "Innovating and pushing technical boundaries" },
-          { value: "F", text: "Optimizing systems for better outcomes" },
-          { value: "G", text: "Collaborating on meaningful projects" },
-          { value: "H", text: "Documenting and sharing knowledge" }
-        ]
-      },
+  title: "Your Passion in Action",
+  type: "love",
+  questions: [
+    {
+      id: "t5_q1",
+      question: "What technical challenges excite you most?",  // ← Changed
+      category: "love",
+      description: "Passion-driven technical interests",
+      options: [
+        { value: "A", text: "Building efficient and scalable systems" },
+        { value: "B", text: "Solving complex technical problems" },
+        { value: "C", text: "Creating tools that help people work better" },
+        { value: "D", text: "Innovating with new technologies" },
+        { value: "E", text: "Optimizing existing solutions for better performance" },
+        { value: "F", text: "Teaching technical concepts to others" },
+        { value: "G", text: "Building products that solve real needs" },
+        { value: "H", text: "Creating elegant technical solutions" }
+      ]
+    },
+    {
+      id: "t5_q2",
+      question: "How do you express your passion through your work?",  // ← Changed
+      category: "love",
+      description: "Professional passion expression",
+      options: [
+        { value: "A", text: "Building high-quality, reliable solutions" },
+        { value: "B", text: "Solving problems that matter to people" },
+        { value: "C", text: "Creating tools that make work easier" },
+        { value: "D", text: "Teaching and mentoring others in my field" },
+        { value: "E", text: "Innovating and pushing technical boundaries" },
+        { value: "F", text: "Optimizing systems for better outcomes" },
+        { value: "G", text: "Collaborating on meaningful projects" },
+        { value: "H", text: "Documenting and sharing knowledge" }
+      ]
+    },
       {
         id: "t5_q3",
         text: "What kind of technical work feels effortless to you?",
@@ -1733,39 +1737,41 @@ export const technicianQuestions = {
     ]
   },
   6: {
-    title: "Your Mission & Purpose",
-    type: "mission",
-    questions: [
-      {
-        id: "t6_q1",
-        text: "What technical problem do you want to help solve?",
-        description: "Mission-level technical impact vision",
-        options: [
-          { value: "A", text: "Make technology more accessible to everyone" },
-          { value: "B", text: "Build tools that empower creators and builders" },
-          { value: "C", text: "Solve efficiency problems in key industries" },
-          { value: "D", text: "Create educational resources for skill development" },
-          { value: "E", text: "Build systems that help people work better" },
-          { value: "F", text: "Solve real problems using technical expertise" },
-          { value: "G", text: "Bridge gaps between technology and users" },
-          { value: "H", text: "Create open solutions that benefit many" }
-        ]
-      },
-      {
-        id: "t6_q2",
-        text: "Who do you want to serve with your technical skills?",
-        description: "Target audience for your mission",
-        options: [
-          { value: "A", text: "Aspiring developers and technologists" },
-          { value: "B", text: "Small businesses needing technical solutions" },
-          { value: "C", text: "Non-profits and social enterprises" },
-          { value: "D", text: "Creators and builders" },
-          { value: "E", text: "Students and lifelong learners" },
-          { value: "F", text: "Teams struggling with technical challenges" },
-          { value: "G", text: "Anyone who could benefit from better tools" },
-          { value: "H", text: "Communities lacking technical resources" }
-        ]
-      },
+  title: "Your Mission & Purpose",
+  type: "mission",
+  questions: [
+    {
+      id: "t6_q1",
+      question: "What technical problem do you want to help solve?",  // ← Changed
+      category: "mission",
+      description: "Mission-level technical impact vision",
+      options: [
+        { value: "A", text: "Make technology more accessible to everyone" },
+        { value: "B", text: "Build tools that empower creators and builders" },
+        { value: "C", text: "Solve efficiency problems in key industries" },
+        { value: "D", text: "Create educational resources for skill development" },
+        { value: "E", text: "Build systems that help people work better" },
+        { value: "F", text: "Solve real problems using technical expertise" },
+        { value: "G", text: "Bridge gaps between technology and users" },
+        { value: "H", text: "Create open solutions that benefit many" }
+      ]
+    },
+    {
+      id: "t6_q2",
+      question: "Who do you want to serve with your technical skills?",  // ← Changed
+      category: "mission",
+      description: "Target audience for your mission",
+      options: [
+        { value: "A", text: "Aspiring developers and technologists" },
+        { value: "B", text: "Small businesses needing technical solutions" },
+        { value: "C", text: "Non-profits and social enterprises" },
+        { value: "D", text: "Creators and builders" },
+        { value: "E", text: "Students and lifelong learners" },
+        { value: "F", text: "Teams struggling with technical challenges" },
+        { value: "G", text: "Anyone who could benefit from better tools" },
+        { value: "H", text: "Communities lacking technical resources" }
+      ]
+    },
       {
         id: "t6_q3",
         text: "What's your vision for using your technical skills?",

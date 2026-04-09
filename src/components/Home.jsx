@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { 
   ArrowRight, Compass, DollarSign, Globe, Play, ChevronRight, 
   CheckCircle, Star, MessageCircle, X, MapPin, Briefcase, 
   TrendingUp, Rocket, Users, Shield, Zap, Target,
   ChevronLeft, Pause, Award, Heart, Coffee, Lock as LockIcon,
-  Crown, User, Briefcase as BriefcaseIcon, Code, Brain, Sparkles
+  Crown, User, Briefcase as BriefcaseIcon, Code, Brain, Sparkles,
+  Quote, Lightbulb, Gift, PartyPopper, Music, Camera, Palette,
+  Coffee as CoffeeIcon, Plane, Smile, ThumbsUp
 } from 'lucide-react';
 import { useIkigai } from '../context/IkigaiContext';
 
@@ -142,6 +144,32 @@ const CustomStyles = () => (
       animation: popupFadeIn 0.3s ease-out forwards;
     }
 
+    @keyframes gradientShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    .gradient-animate {
+      background-size: 200% 200%;
+      animation: gradientShift 3s ease infinite;
+    }
+
+    @keyframes bounce-slow {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+    .animate-bounce-slow {
+      animation: bounce-slow 3s ease-in-out infinite;
+    }
+
+    @keyframes spin-slow {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    .animate-spin-slow {
+      animation: spin-slow 20s linear infinite;
+    }
+
     @media (max-width: 768px) {
       .ml-\\[280px\\] {
         margin-left: 0 !important;
@@ -150,22 +178,113 @@ const CustomStyles = () => (
   `}} />
 );
 
-// --- HELPER COMPONENTS ---
+// --- Floating Particles Background ---
+const FloatingParticles = () => (
+  <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+    {[...Array(30)].map((_, i) => (
+      <motion.div
+        key={i}
+        className="absolute rounded-full"
+        style={{
+          width: Math.random() * 6 + 2,
+          height: Math.random() * 6 + 2,
+          left: `${Math.random() * 100}%`,
+          top: `${Math.random() * 100}%`,
+          background: `rgba(100, 205, 209, ${Math.random() * 0.3})`,
+        }}
+        animate={{
+          y: [0, -50, 0],
+          x: [0, Math.random() * 30 - 15, 0],
+          opacity: [0, 0.5, 0],
+        }}
+        transition={{
+          duration: Math.random() * 8 + 5,
+          repeat: Infinity,
+          delay: Math.random() * 5,
+        }}
+      />
+    ))}
+  </div>
+);
 
+// --- Animated Counter Component ---
+const AnimatedCounter = ({ value, label, icon: Icon, color }) => {
+  const [count, setCount] = useState(0);
+  
+  useEffect(() => {
+    const duration = 2000;
+    const steps = 60;
+    const increment = value / steps;
+    let current = 0;
+    const timer = setInterval(() => {
+      current += increment;
+      if (current >= value) {
+        setCount(value);
+        clearInterval(timer);
+      } else {
+        setCount(Math.floor(current));
+      }
+    }, duration / steps);
+    return () => clearInterval(timer);
+  }, [value]);
+  
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.8 }}
+      whileInView={{ opacity: 1, scale: 1 }}
+      viewport={{ once: true }}
+      className="text-center"
+    >
+      <div className={`w-12 h-12 rounded-full bg-${color}/10 flex items-center justify-center mx-auto mb-3`}>
+        <Icon className={`w-6 h-6 text-${color}`} />
+      </div>
+      <div className={`text-3xl font-bold text-${color}`}>{count}{value >= 1000 ? '+' : ''}</div>
+      <div className="text-sm text-gray-500">{label}</div>
+    </motion.div>
+  );
+};
+
+// --- Testimonial Card Component ---
+const TestimonialCard = ({ testimonial, isActive }) => (
+  <motion.div
+    initial={{ opacity: 0, scale: 0.9 }}
+    animate={{ opacity: isActive ? 1 : 0, scale: isActive ? 1 : 0.95 }}
+    transition={{ duration: 0.5 }}
+    className="glass-card p-8 rounded-2xl"
+  >
+    <div className="flex gap-1 mb-4">
+      {[...Array(5)].map((_, i) => (
+        <Star key={i} className="w-4 h-4 fill-current text-yellow-400" />
+      ))}
+    </div>
+    <p className="text-lg italic text-gray-700 mb-6">"{testimonial.quote}"</p>
+    <div className="flex items-center gap-3">
+      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-downy to-horizon flex items-center justify-center text-white font-bold">
+        {testimonial.name[0]}
+      </div>
+      <div>
+        <h4 className="font-semibold text-tiber">{testimonial.name}</h4>
+        <p className="text-xs text-gray-500">{testimonial.role}</p>
+      </div>
+    </div>
+  </motion.div>
+);
+
+// --- Confetti Component ---
 const Confetti = () => {
   const [pieces, setPieces] = useState([]);
   
   useEffect(() => {
-    const colors = ['#0A3948', '#5794A4', '#64CDD1', '#FFFFFF', '#FFD700'];
-    const newPieces = [...Array(80)].map((_, i) => ({
+    const colors = ['#0A3948', '#5794A4', '#64CDD1', '#FFFFFF', '#FFD700', '#F43F5E', '#8B5CF6'];
+    const newPieces = [...Array(120)].map((_, i) => ({
       id: i,
       left: Math.random() * 100,
       backgroundColor: colors[Math.floor(Math.random() * colors.length)],
       duration: Math.random() * 3 + 2,
       delay: Math.random() * 0.5,
       borderRadius: Math.random() > 0.5 ? '50%' : '2px',
-      width: Math.random() * 8 + 4,
-      height: Math.random() * 8 + 4
+      width: Math.random() * 10 + 4,
+      height: Math.random() * 10 + 4,
     }));
     setPieces(newPieces);
   }, []);
@@ -173,17 +292,17 @@ const Confetti = () => {
   return (
     <div className="fixed inset-0 pointer-events-none z-[9999] overflow-hidden">
       {pieces.map((piece) => (
-        <div
+        <motion.div
           key={piece.id}
-          className="confetti-piece absolute"
+          className="absolute"
+          initial={{ y: -20, x: `${piece.left}vw`, rotate: 0, opacity: 1 }}
+          animate={{ y: '100vh', rotate: 360, opacity: 0 }}
+          transition={{ duration: piece.duration, delay: piece.delay, ease: 'easeOut' }}
           style={{
-            left: `${piece.left}vw`,
             backgroundColor: piece.backgroundColor,
-            animationDuration: `${piece.duration}s`,
-            animationDelay: `${piece.delay}s`,
             borderRadius: piece.borderRadius,
-            width: `${piece.width}px`,
-            height: `${piece.height}px`
+            width: piece.width,
+            height: piece.height,
           }}
         />
       ))}
@@ -191,10 +310,91 @@ const Confetti = () => {
   );
 };
 
+// --- Category Card Component ---
+const CategoryCard = ({ category, isSelected, onSelect, index }) => {
+  const Icon = category.icon;
+  
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 30 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ delay: index * 0.1 }}
+      whileHover={{ y: -8 }}
+    >
+      <motion.button
+        onClick={() => onSelect(category.id)}
+        className={`relative w-full text-left p-6 rounded-2xl transition-all duration-300 ${
+          isSelected
+            ? 'ring-2 ring-downy shadow-xl scale-[1.02]'
+            : 'hover:shadow-xl hover:scale-[1.01]'
+        }`}
+        style={{
+          background: isSelected ? `linear-gradient(135deg, ${category.color}12, ${category.color}05)` : 'rgba(255,255,255,0.8)',
+          backdropFilter: 'blur(8px)',
+          border: `1px solid ${isSelected ? category.color : 'rgba(0,0,0,0.05)'}`,
+        }}
+        whileHover={{ scale: 1.02 }}
+        whileTap={{ scale: 0.98 }}
+      >
+        {isSelected && (
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            className="absolute top-3 right-3"
+          >
+            <CheckCircle className="w-5 h-5 text-downy" />
+          </motion.div>
+        )}
+        
+        <motion.div
+          className="w-14 h-14 rounded-xl flex items-center justify-center mb-4"
+          style={{ background: `${category.color}15` }}
+          whileHover={{ scale: 1.1, rotate: 5 }}
+          transition={{ type: 'spring', stiffness: 400 }}
+        >
+          <Icon className="w-7 h-7" style={{ color: category.color }} />
+        </motion.div>
+        
+        <h3 className="font-sora text-xl font-bold mb-1" style={{ color: category.color }}>
+          {category.title}
+        </h3>
+        <p className="text-xs text-gray-500 mb-2">{category.subtitle}</p>
+        <p className="text-sm text-gray-600 mb-4">{category.description}</p>
+        
+        <div className="flex flex-wrap gap-2 mb-4">
+          {category.features.map((feature, i) => (
+            <span
+              key={i}
+              className="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-600"
+            >
+              {feature}
+            </span>
+          ))}
+        </div>
+        
+        <motion.div
+          className="flex items-center gap-2 text-sm font-medium"
+          style={{ color: category.color }}
+          animate={{ x: [0, 5, 0] }}
+          transition={{ duration: 1.5, repeat: Infinity }}
+        >
+          <span>Start Journey</span>
+          <ArrowRight className="w-4 h-4" />
+        </motion.div>
+      </motion.button>
+    </motion.div>
+  );
+};
+
 // --- MAIN APPLICATION ---
 export default function Home() {
   const navigate = useNavigate();
   const { setSelectedCategory, selectedCategory } = useIkigai();
+  const { scrollYProgress } = useScroll();
+  const opacity = useTransform(scrollYProgress, [0, 0.2], [1, 0]);
+  const scale = useTransform(scrollYProgress, [0, 0.2], [1, 0.95]);
+  
   const [hoveredCard, setHoveredCard] = useState(null);
   
   // --- STATE MANAGEMENT ---
@@ -212,7 +412,7 @@ export default function Home() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
 
-  // Ikigai categories for the new section
+  // Ikigai categories
   const categories = [
     {
       id: 'entrepreneur',
@@ -243,7 +443,7 @@ export default function Home() {
     }
   ];
 
-  // Community images with your IMPORTED JPEG files
+  // Community images
   const communityImages = [
     { id: 1, src: photo1, fallback: "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800&h=500&fit=crop", title: "Global Community Meetup", location: "Bali, Indonesia" },
     { id: 2, src: photo2, fallback: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=800&h=500&fit=crop", title: "Coworking Session", location: "Lisbon, Portugal" },
@@ -270,7 +470,7 @@ export default function Home() {
     return () => clearInterval(interval);
   }, [isAutoPlaying, communityImages.length]);
 
-  // --- HOOKS ---
+  // Intersection Observer for reveal animations
   useEffect(() => {
     const observer = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
@@ -311,7 +511,6 @@ export default function Home() {
         setOnboardingStep(4);
         setShowConfetti(true);
         setTimeout(() => setShowConfetti(false), 5000);
-        // Show user type popup after onboarding completion
         setTimeout(() => setShowUserTypePopup(true), 1000);
       }
     }, 400);
@@ -333,12 +532,10 @@ export default function Home() {
     setShowUserTypePopup(false);
   };
 
-  // Function to navigate to sevendays page
   const goToSevendays = () => {
     navigate('/sevendays');
   };
 
-  // Ikigai category selection handler
   const handleCategorySelect = (categoryId) => {
     setSelectedCategory(categoryId);
     navigate('/sevendays');
@@ -377,7 +574,6 @@ export default function Home() {
     }
   };
 
-  // --- MOCK DATA ---
   const testimonials = [
     { name: "Sarah Johnson", role: "Former Accountant", before: "Burned out in cubicle", after: "Living in Bali, $8k/mo", quote: "Nomads Advisors didn't just give me a course, they gave me a completely new trajectory for my life. Best decision I ever made!" },
     { name: "Marcus Chen", role: "Freelance Designer", before: "Struggling for clients", after: "Running a 6-figure agency", quote: "The 30-day challenge completely rewired how I approach income generation and travel. I've now visited 15 countries while working!" },
@@ -390,30 +586,9 @@ export default function Home() {
     const [showActionPopup, setShowActionPopup] = useState(false);
 
     const userTypes = [
-      { 
-        id: 'entrepreneur', 
-        title: 'Entrepreneur', 
-        subtitle: 'Founder · Innovator',
-        description: 'Visionary leaders building something new',
-        icon: Rocket,
-        color: '#64CDD1',
-      },
-      { 
-        id: 'managerial', 
-        title: 'Managerial', 
-        subtitle: 'Marketing · Business Developer',
-        description: 'Strategic thinkers driving growth',
-        icon: TrendingUp,
-        color: '#5794A4',
-      },
-      { 
-        id: 'technician', 
-        title: 'Technician', 
-        subtitle: 'Developer · Creator · Sales',
-        description: 'Hands-on experts executing excellence',
-        icon: Code,
-        color: '#0A3948',
-      }
+      { id: 'entrepreneur', title: 'Entrepreneur', subtitle: 'Founder · Innovator', description: 'Visionary leaders building something new', icon: Rocket, color: '#64CDD1' },
+      { id: 'managerial', title: 'Managerial', subtitle: 'Marketing · Business Developer', description: 'Strategic thinkers driving growth', icon: TrendingUp, color: '#5794A4' },
+      { id: 'technician', title: 'Technician', subtitle: 'Developer · Creator · Sales', description: 'Hands-on experts executing excellence', icon: Code, color: '#0A3948' }
     ];
 
     const handleTypeSelect = (typeId) => {
@@ -436,27 +611,39 @@ export default function Home() {
     if (showActionPopup) {
       const selected = userTypes.find(t => t.id === selectedType);
       return (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={handleLater}>
-          <div className="bg-white rounded-3xl max-w-md w-full mx-4 p-8 shadow-2xl animate-popup" onClick={e => e.stopPropagation()}>
-            <div className="text-center mb-6">
-              <div 
-                className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4"
-                style={{ background: `linear-gradient(135deg, ${selected.color}20, ${selected.color}10)` }}
-              >
-                <selected.icon size={36} style={{ color: selected.color }} />
-              </div>
-              <h2 className="text-2xl font-bold text-[#0A3948] mb-2">Ready to Begin?</h2>
-              <p className="text-gray-500 text-sm">
-                You've chosen the <span className="font-bold" style={{ color: selected.color }}>{selected.title}</span> path
-              </p>
-            </div>
-
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-md"
+          onClick={handleLater}
+        >
+          <motion.div
+            initial={{ scale: 0.8, y: 50 }}
+            animate={{ scale: 1, y: 0 }}
+            exit={{ scale: 0.8, y: 50 }}
+            className="bg-white rounded-3xl max-w-md w-full mx-4 p-8 shadow-2xl"
+            onClick={e => e.stopPropagation()}
+          >
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.2, type: 'spring' }}
+              className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4"
+              style={{ background: `linear-gradient(135deg, ${selected.color}20, ${selected.color}10)` }}
+            >
+              <selected.icon size={36} style={{ color: selected.color }} />
+            </motion.div>
+            <h2 className="text-2xl font-bold text-[#0A3948] mb-2 text-center">Ready to Begin?</h2>
+            <p className="text-gray-500 text-sm text-center mb-6">
+              You've chosen the <span className="font-bold" style={{ color: selected.color }}>{selected.title}</span> path
+            </p>
             <div className="flex gap-3">
               <button
                 onClick={handleStartChallenge}
                 className="flex-1 px-6 py-3 bg-gradient-to-r from-[#0A3948] to-[#5794A4] text-white rounded-xl font-semibold hover:shadow-lg hover:-translate-y-0.5 transition-all"
               >
-                Let's Start 7 Days Challenge <Rocket size={16} className="inline ml-1" />
+                Let's Start <Rocket size={16} className="inline ml-1" />
               </button>
               <button
                 onClick={handleLater}
@@ -465,18 +652,35 @@ export default function Home() {
                 Later
               </button>
             </div>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       );
     }
 
     return (
-      <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={onClose}>
-        <div className="bg-white rounded-3xl max-w-3xl w-full mx-4 p-8 shadow-2xl animate-popup" onClick={e => e.stopPropagation()}>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-md"
+        onClick={onClose}
+      >
+        <motion.div
+          initial={{ scale: 0.9, y: 30 }}
+          animate={{ scale: 1, y: 0 }}
+          exit={{ scale: 0.9, y: 30 }}
+          className="bg-white rounded-3xl max-w-3xl w-full mx-4 p-8 shadow-2xl"
+          onClick={e => e.stopPropagation()}
+        >
           <div className="flex justify-between items-center mb-4">
-            <div className="w-16 h-16 bg-gradient-to-br from-[#64CDD1]/20 to-[#5794A4]/20 rounded-full flex items-center justify-center">
+            <motion.div
+              initial={{ rotate: -180 }}
+              animate={{ rotate: 0 }}
+              transition={{ delay: 0.2, type: 'spring' }}
+              className="w-16 h-16 bg-gradient-to-br from-[#64CDD1]/20 to-[#5794A4]/20 rounded-full flex items-center justify-center"
+            >
               <Compass size={32} className="text-[#0A3948]" />
-            </div>
+            </motion.div>
             <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
               <X size={24} />
             </button>
@@ -485,16 +689,20 @@ export default function Home() {
             <h2 className="text-2xl font-bold text-[#0A3948] mb-2">Choose Your Path</h2>
             <p className="text-gray-500 text-sm">Select the role that best describes you</p>
           </div>
-
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-            {userTypes.map((type) => {
+            {userTypes.map((type, idx) => {
               const Icon = type.icon;
               const isSelected = selectedType === type.id;
               return (
-                <button
+                <motion.button
                   key={type.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: idx * 0.1 }}
                   onClick={() => handleTypeSelect(type.id)}
-                  className={`p-6 rounded-2xl text-center transition-all transform hover:scale-105 ${
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.98 }}
+                  className={`p-6 rounded-2xl text-center transition-all transform ${
                     isSelected 
                       ? 'ring-2 ring-[#64CDD1] shadow-lg' 
                       : 'hover:shadow-md'
@@ -510,96 +718,189 @@ export default function Home() {
                   <h3 className="font-bold text-lg mb-1" style={{ color: type.color }}>{type.title}</h3>
                   <p className="text-xs text-gray-500 font-medium">{type.subtitle}</p>
                   <p className="text-[10px] text-gray-400 mt-2">{type.description}</p>
-                </button>
+                </motion.button>
               );
             })}
           </div>
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
     );
   };
 
   return (
     <div className="relative min-h-screen md:ml-[280px]">
       <CustomStyles />
+      <FloatingParticles />
       {showConfetti && <Confetti />}
 
       {/* User Type Selection Popup */}
-      {showUserTypePopup && (
-        <UserTypePopup 
-          onSelect={handleUserTypeSelect}
-          onClose={handleCloseUserTypePopup}
-        />
-      )}
+      <AnimatePresence>
+        {showUserTypePopup && (
+          <UserTypePopup 
+            onSelect={handleUserTypeSelect}
+            onClose={handleCloseUserTypePopup}
+          />
+        )}
+      </AnimatePresence>
 
       {/* FLOATING GAMIFICATION TOAST */}
-      <div className={`fixed top-24 right-4 md:right-8 z-50 transition-all duration-500 transform ${gamificationToast ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'}`}>
-        <div className="glass-card px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 border-l-4 border-l-downy">
-          <Rocket className="text-downy w-5 h-5 animate-bounce" />
-          <span className="font-sora text-sm font-bold">{gamificationToast}</span>
-        </div>
-      </div>
+      <AnimatePresence>
+        {gamificationToast && (
+          <motion.div
+            initial={{ opacity: 0, x: 100 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 100 }}
+            className="fixed top-24 right-4 md:right-8 z-50"
+          >
+            <div className="glass-card px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 border-l-4 border-l-downy">
+              <Rocket className="text-downy w-5 h-5 animate-bounce" />
+              <span className="font-sora text-sm font-bold">{gamificationToast}</span>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* EXIT INTENT POPUP */}
-      {showExitPopup && (
-        <div className="fixed inset-0 z-[100] bg-tiber/90 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setShowExitPopup(false)}>
-          <div className="bg-white rounded-3xl max-w-lg w-full p-8 relative shadow-2xl" onClick={e => e.stopPropagation()}>
-            <button onClick={() => setShowExitPopup(false)} className="absolute top-4 right-4 text-gray-400 hover:text-tiber transition-colors">
-              <X className="w-6 h-6" />
-            </button>
-            <div className="w-20 h-20 bg-horizon/20 rounded-full flex items-center justify-center mx-auto mb-6">
-              <Target className="w-10 h-10 text-tiber" />
-            </div>
-            <h3 className="font-sora text-2xl font-bold text-center mb-2">Wait — Find your purpose in 7 days.</h3>
-            <p className="text-gray-600 text-center mb-6">Don't leave your freedom to chance. Get our free 7-day clarity roadmap sent straight to your inbox.</p>
-            <input type="email" placeholder="Your best email" className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:border-downy mb-4" />
-            <button onClick={() => setShowExitPopup(false)} className="w-full bg-tiber text-white font-semibold py-3 rounded-xl hover:bg-downy transition-all">
-              Send Me The Roadmap
-            </button>
-          </div>
-        </div>
-      )}
+      <AnimatePresence>
+        {showExitPopup && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-tiber/90 backdrop-blur-sm flex items-center justify-center p-4"
+            onClick={() => setShowExitPopup(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              className="bg-white rounded-3xl max-w-lg w-full p-8 relative shadow-2xl"
+              onClick={e => e.stopPropagation()}
+            >
+              <button onClick={() => setShowExitPopup(false)} className="absolute top-4 right-4 text-gray-400 hover:text-tiber transition-colors">
+                <X className="w-6 h-6" />
+              </button>
+              <div className="w-20 h-20 bg-horizon/20 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Target className="w-10 h-10 text-tiber" />
+              </div>
+              <h3 className="font-sora text-2xl font-bold text-center mb-2">Wait — Find your purpose in 7 days.</h3>
+              <p className="text-gray-600 text-center mb-6">Don't leave your freedom to chance. Get our free 7-day clarity roadmap sent straight to your inbox.</p>
+              <input type="email" placeholder="Your best email" className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:border-downy mb-4" />
+              <button onClick={() => setShowExitPopup(false)} className="w-full bg-tiber text-white font-semibold py-3 rounded-xl hover:bg-downy transition-all">
+                Send Me The Roadmap
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* 1. HERO SECTION */}
-      <section className="pt-32 pb-20 px-6 lg:px-20 max-w-[1440px] mx-auto grid md:grid-cols-12 gap-12 items-center min-h-[90vh]">
-        <div className="md:col-span-6 reveal">
-          <div className="inline-flex items-center gap-2 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full mb-6 shadow-sm">
+      <section className="relative pt-32 pb-20 px-6 lg:px-20 max-w-[1440px] mx-auto grid md:grid-cols-12 gap-12 items-center min-h-[90vh] overflow-hidden">
+        {/* Background animated shapes */}
+        <div className="absolute top-20 left-10 w-64 h-64 bg-downy/5 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute bottom-20 right-10 w-80 h-80 bg-horizon/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+        
+        <motion.div 
+          className="md:col-span-6"
+          initial={{ opacity: 0, x: -50 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.8 }}
+        >
+          <motion.div 
+            className="inline-flex items-center gap-2 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full mb-6 shadow-sm"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+          >
             <span className="flex h-2 w-2 rounded-full bg-downy animate-pulse"></span>
             <span className="font-inter text-sm font-semibold text-tiber">🚀 Start in 2 mins • Free Access</span>
-          </div>
-          <h1 className="font-sora text-5xl lg:text-7xl font-extrabold leading-[1.1] mb-6 text-tiber">
+          </motion.div>
+          
+          <motion.h1 
+            className="font-sora text-5xl lg:text-7xl font-extrabold leading-[1.1] mb-6 text-tiber"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+          >
             You weren't meant to <span className="text-horizon relative whitespace-nowrap">
               live on repeat
-              <svg className="absolute w-full h-3 -bottom-1 left-0 text-downy opacity-60" viewBox="0 0 100 10" preserveAspectRatio="none"><path d="M0 5 Q 50 15 100 5" stroke="currentColor" strokeWidth="4" fill="transparent"/></svg>
+              <motion.svg 
+                className="absolute w-full h-3 -bottom-1 left-0 text-downy opacity-60" 
+                viewBox="0 0 100 10" 
+                preserveAspectRatio="none"
+                initial={{ pathLength: 0 }}
+                animate={{ pathLength: 1 }}
+                transition={{ duration: 1, delay: 0.8 }}
+              >
+                <path d="M0 5 Q 50 15 100 5" stroke="currentColor" strokeWidth="4" fill="transparent"/>
+              </motion.svg>
             </span>
-          </h1>
-          <p className="font-inter text-lg text-tiber/70 mb-10 max-w-lg leading-relaxed">
+          </motion.h1>
+          
+          <motion.p 
+            className="font-inter text-lg text-tiber/70 mb-10 max-w-lg leading-relaxed"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5 }}
+          >
             Break the 9-5 cycle. Build location-independent income. Join a global community of modern explorers redesigning their lives.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4">
-            <button onClick={scrollToOnboarding} className="bg-downy btn-glow text-tiber font-sora font-bold text-lg px-8 py-4 rounded-xl flex items-center justify-center gap-2 transition-all hover:scale-105 shadow-lg">
+          </motion.p>
+          
+          <motion.div 
+            className="flex flex-col sm:flex-row gap-4"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6 }}
+          >
+            <motion.button 
+              onClick={scrollToOnboarding} 
+              className="bg-downy btn-glow text-tiber font-sora font-bold text-lg px-8 py-4 rounded-xl flex items-center justify-center gap-2 transition-all hover:scale-105 shadow-lg"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.98 }}
+            >
               Start Your Journey <ArrowRight className="w-5 h-5" />
-            </button>
-            <button onClick={handleVideoPlay} className="bg-transparent border-2 border-tiber text-tiber hover:bg-tiber hover:text-white font-sora font-bold text-lg px-8 py-4 rounded-xl flex items-center justify-center gap-2 transition-all hover:scale-105">
+            </motion.button>
+            <motion.button 
+              onClick={handleVideoPlay} 
+              className="bg-transparent border-2 border-tiber text-tiber hover:bg-tiber hover:text-white font-sora font-bold text-lg px-8 py-4 rounded-xl flex items-center justify-center gap-2 transition-all hover:scale-105"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.98 }}
+            >
               <Play className="w-5 h-5" /> Watch Video
-            </button>
-          </div>
-          <div className="flex gap-6 mt-8 text-sm text-tiber/50">
+            </motion.button>
+          </motion.div>
+          
+          <motion.div 
+            className="flex gap-6 mt-8 text-sm text-tiber/50"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.8 }}
+          >
             <span className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-downy" /> No credit card</span>
             <span className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-downy" /> 14-day guarantee</span>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
         
-        <div className="md:col-span-6 relative reveal animate-float">
+        <motion.div 
+          className="md:col-span-6 relative"
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.8, delay: 0.2 }}
+        >
           <div className="absolute inset-0 bg-gradient-to-tr from-tiber/20 to-downy/20 rounded-[32px] z-10"></div>
-          <img 
+          <motion.img 
             src="https://images.unsplash.com/photo-1552733407-5d5c46c3bb3b?w=800&q=80" 
             alt="Nomad Lifestyle" 
             className="rounded-[32px] w-full h-[500px] object-cover shadow-2xl border-4 border-white/70"
-            loading="lazy"
+            whileHover={{ scale: 1.02 }}
+            transition={{ duration: 0.3 }}
           />
           
-          <div className="absolute -bottom-6 -left-6 z-20 glass-card p-4 rounded-xl shadow-2xl flex items-center gap-4 animate-bounce" style={{animationDuration: '4s'}}>
+          <motion.div 
+            className="absolute -bottom-6 -left-6 z-20 glass-card p-4 rounded-xl shadow-2xl flex items-center gap-4"
+            animate={{ y: [0, -10, 0] }}
+            transition={{ duration: 4, repeat: Infinity }}
+          >
             <div className="bg-downy/20 p-2 rounded-full">
               <TrendingUp className="text-downy w-6 h-6" />
             </div>
@@ -607,25 +908,48 @@ export default function Home() {
               <p className="font-inter text-xs text-tiber/60">Average Income Goal</p>
               <p className="font-sora font-bold text-tiber text-xl">$5,000 <span className="text-sm">/ mo</span></p>
             </div>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       </section>
 
       {/* 2. IKIGAI CATEGORIES SECTION */}
       <section className="py-16 px-6 lg:px-20 max-w-[1440px] mx-auto">
-        <div className="text-center mb-12 reveal">
-          <div className="inline-flex items-center gap-2 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full mb-4 shadow-sm">
+        <div className="text-center mb-12">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="inline-flex items-center gap-2 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full mb-4 shadow-sm"
+          >
             <Sparkles className="w-4 h-4 text-downy" />
             <span className="text-sm font-medium text-tiber">Discover Your Purpose</span>
-          </div>
-          <h2 className="font-sora text-4xl font-bold mb-4 bg-gradient-to-r from-tiber to-horizon bg-clip-text text-transparent">
+          </motion.div>
+          
+          <motion.h2 
+            className="font-sora text-4xl font-bold mb-4 bg-gradient-to-r from-tiber to-horizon bg-clip-text text-transparent"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+          >
             Find Your Ikigai
-          </h2>
-          <p className="font-inter text-tiber/60 max-w-2xl mx-auto">
+          </motion.h2>
+          
+          <motion.p 
+            className="font-inter text-tiber/60 max-w-2xl mx-auto"
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+          >
             Embark on a transformative 7-day journey to discover what you love, 
             what you're good at, what the world needs, and what you can be paid for.
-          </p>
-          <div className="flex flex-wrap gap-4 justify-center mt-6">
+          </motion.p>
+          
+          <motion.div 
+            className="flex flex-wrap gap-4 justify-center mt-6"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+          >
             <div className="flex items-center gap-2 text-sm text-gray-500">
               <CheckCircle className="w-4 h-4 text-downy" />
               <span>7-Day Structured Journey</span>
@@ -638,239 +962,263 @@ export default function Home() {
               <CheckCircle className="w-4 h-4 text-downy" />
               <span>Visual Ikigai Map</span>
             </div>
-          </div>
+          </motion.div>
         </div>
 
         <div className="grid md:grid-cols-3 gap-6">
-          {categories.map((category, index) => {
-            const Icon = category.icon;
-            const isHovered = hoveredCard === category.id;
-            
-            return (
-              <motion.div
-                key={category.id}
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1, duration: 0.5 }}
-                onMouseEnter={() => setHoveredCard(category.id)}
-                onMouseLeave={() => setHoveredCard(null)}
-              >
-                <button
-                  onClick={() => handleCategorySelect(category.id)}
-                  className={`w-full h-full text-left p-6 rounded-2xl transition-all duration-300 hover-lift ${
-                    selectedCategory === category.id
-                      ? 'ring-2 ring-downy shadow-xl'
-                      : 'hover:shadow-xl'
-                  }`}
-                  style={{
-                    background: `linear-gradient(135deg, ${category.color}08, white)`,
-                    border: `1px solid ${category.color}20`
-                  }}
-                >
-                  <div
-                    className="w-14 h-14 rounded-xl flex items-center justify-center mb-4"
-                    style={{ background: `${category.color}15` }}
-                  >
-                    <Icon className="w-7 h-7" style={{ color: category.color }} />
-                  </div>
-                  
-                  <h3 className="font-sora text-xl font-bold mb-1" style={{ color: category.color }}>
-                    {category.title}
-                  </h3>
-                  <p className="text-sm text-gray-500 mb-3">{category.subtitle}</p>
-                  <p className="text-sm text-gray-600 mb-4">{category.description}</p>
-                  
-                  <div className="flex flex-wrap gap-2 mb-4">
-                    {category.features.map((feature, i) => (
-                      <span
-                        key={i}
-                        className="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-600"
-                      >
-                        {feature}
-                      </span>
-                    ))}
-                  </div>
-                  
-                  <div
-                    className={`flex items-center gap-2 text-sm font-medium transition-all ${
-                      isHovered ? 'gap-3' : ''
-                    }`}
-                    style={{ color: category.color }}
-                  >
-                    <span>Start Journey</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </div>
-                </button>
-              </motion.div>
-            );
-          })}
+          {categories.map((category, index) => (
+            <CategoryCard
+              key={category.id}
+              category={category}
+              isSelected={selectedCategory === category.id}
+              onSelect={handleCategorySelect}
+              index={index}
+            />
+          ))}
         </div>
       </section>
 
       {/* 3. HOW IT WORKS - IKIGAI SECTION */}
-      <section className="py-16 px-6 lg:px-20 max-w-[1440px] mx-auto bg-white/30 rounded-3xl">
-        <div className="text-center mb-12 reveal">
+      <section className="py-16 px-6 lg:px-20 max-w-[1440px] mx-auto">
+        <motion.div 
+          className="text-center mb-12"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+        >
           <h2 className="font-sora text-3xl font-bold text-tiber mb-4">How It Works</h2>
           <p className="text-gray-600">A simple, structured journey to discover your Ikigai in 7 days</p>
-        </div>
+        </motion.div>
         
         <div className="grid md:grid-cols-4 gap-6">
           {[
-            { step: '01', title: 'Choose Path', desc: 'Select your category', icon: Target },
-            { step: '02', title: 'Answer Questions', desc: '6 days of reflection', icon: Users },
-            { step: '03', title: 'Discover', desc: 'Get your Ikigai map', icon: Globe },
-            { step: '04', title: 'Take Action', desc: 'Start your journey', icon: Zap }
+            { step: '01', title: 'Choose Path', desc: 'Select your category', icon: Target, color: '#64CDD1' },
+            { step: '02', title: 'Answer Questions', desc: '6 days of reflection', icon: Users, color: '#5794A4' },
+            { step: '03', title: 'Discover', desc: 'Get your Ikigai map', icon: Globe, color: '#8B5CF6' },
+            { step: '04', title: 'Take Action', desc: 'Start your journey', icon: Zap, color: '#F59E0B' }
           ].map((item, i) => (
-            <div key={i} className="text-center">
-              <div className="w-16 h-16 rounded-full bg-downy/10 flex items-center justify-center mx-auto mb-4">
-                <item.icon className="w-8 h-8 text-downy" />
-              </div>
-              <div className="text-2xl font-bold text-horizon mb-2">{item.step}</div>
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.1 }}
+              className="text-center"
+            >
+              <motion.div 
+                className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
+                style={{ background: `${item.color}15` }}
+                whileHover={{ scale: 1.1, rotate: 5 }}
+              >
+                <item.icon className="w-8 h-8" style={{ color: item.color }} />
+              </motion.div>
+              <div className="text-2xl font-bold mb-2" style={{ color: item.color }}>{item.step}</div>
               <h3 className="font-semibold text-tiber mb-1">{item.title}</h3>
               <p className="text-sm text-gray-500">{item.desc}</p>
-            </div>
+            </motion.div>
           ))}
         </div>
       </section>
 
       {/* 4. INTERACTIVE ONBOARDING */}
       <section id="onboarding" className="py-24 px-6 relative">
-        <div className="max-w-[800px] mx-auto reveal">
+        <div className="max-w-[800px] mx-auto">
           <div className="text-center mb-10">
             <h2 className="font-sora text-3xl md:text-4xl font-bold mb-4 bg-gradient-to-r from-tiber to-horizon bg-clip-text text-transparent">Design Your Escape Plan</h2>
             <p className="font-inter text-tiber/60">Takes less than 60 seconds • Personalized roadmap</p>
           </div>
 
-          <div className="glass-card rounded-3xl p-8 md:p-12 shadow-2xl relative overflow-hidden">
-            {onboardingStep < 4 && (
-              <div className="mb-10">
-                <div className="flex justify-between font-inter text-xs font-bold text-tiber/50 mb-2 uppercase tracking-wider">
-                  <span>Step {onboardingStep} of 3</span>
-                  <span>{Math.round((onboardingStep/3)*100)}%</span>
-                </div>
-                <div className="h-2 w-full bg-tiber/10 rounded-full overflow-hidden">
-                  <div className="h-full bg-downy transition-all duration-700 ease-out rounded-full" style={{ width: `${(onboardingStep / 3) * 100}%` }}></div>
-                </div>
-              </div>
-            )}
-
-            {onboardingStep === 1 && (
-              <div className="animate-slide-right">
-                <h3 className="font-sora text-2xl font-bold mb-6 text-center">What's pulling you towards change?</h3>
-                <div className="grid sm:grid-cols-3 gap-4">
-                  {[
-                    { id: 'escape', icon: BriefcaseIcon, title: 'Escape 9–5', desc: 'Break the corporate chains', color: '#0A3948' },
-                    { id: 'income', icon: DollarSign, title: 'Build Income', desc: 'Create financial freedom', color: '#5794A4' },
-                    { id: 'travel', icon: Globe, title: 'Travel Lifestyle', desc: 'Work from anywhere', color: '#64CDD1' }
-                  ].map(item => (
-                    <button key={item.id} onClick={() => handleOnboardingSelect('pull', item.id)} className={`p-6 rounded-2xl border-2 text-left transition-all hover-lift ${onboardingData.pull === item.id ? 'border-downy bg-white shadow-xl scale-105' : 'border-gray-100 bg-white/80 hover:bg-white'}`}>
-                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4`} style={{ background: `${item.color}15` }}>
-                        <item.icon className="w-6 h-6" style={{ color: item.color }} />
-                      </div>
-                      <h4 className="font-sora font-bold mb-2 text-tiber">{item.title}</h4>
-                      <p className="font-inter text-sm text-tiber/60">{item.desc}</p>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {onboardingStep === 2 && (
-              <div className="animate-slide-right">
-                <h3 className="font-sora text-2xl font-bold mb-6 text-center">Where are you starting from?</h3>
-                <div className="flex flex-col sm:flex-row gap-6 justify-center">
-                  {[
-                    { id: 'beginner', title: 'Beginner', desc: 'No online income yet', icon: Coffee },
-                    { id: 'intermediate', title: 'Intermediate', desc: 'Already making some $$ online', icon: Rocket }
-                  ].map(item => (
-                    <button key={item.id} onClick={() => handleOnboardingSelect('level', item.id)} className={`flex-1 p-8 rounded-2xl border-2 text-center transition-all hover-lift ${onboardingData.level === item.id ? 'border-downy bg-white shadow-xl scale-105' : 'border-gray-100 bg-white/80 hover:bg-white'}`}>
-                      <item.icon className="w-12 h-12 mx-auto mb-4 text-horizon" />
-                      <h4 className="font-sora text-xl font-bold mb-2 text-tiber">{item.title}</h4>
-                      <p className="font-inter text-sm text-tiber/60">{item.desc}</p>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {onboardingStep === 3 && (
-              <div className="animate-slide-right">
-                <h3 className="font-sora text-2xl font-bold mb-6 text-center">How fast do you want to transform?</h3>
-                <div className="grid sm:grid-cols-3 gap-4">
-                  {[
-                    { id: '7', title: '7 Days', badge: 'Clarity Seeker', color: '#64CDD1', available: true },
-                    { id: '30', title: '30 Days', badge: 'Income Builder', color: '#5794A4', available: false, locked: true },
-                    { id: '60', title: '60 Days', badge: 'Nomad Starter', color: '#0A3948', available: false, locked: true }
-                  ].map(item => (
-                    <button 
-                      key={item.id} 
-                      onClick={() => item.available && handleOnboardingSelect('speed', item.id)} 
-                      className={`p-6 rounded-2xl border-2 text-center transition-all hover-lift relative overflow-hidden ${onboardingData.speed === item.id ? 'border-downy shadow-xl scale-105' : 'border-gray-100 bg-white/80'} ${!item.available ? 'cursor-not-allowed opacity-60' : 'hover:bg-white'}`} 
-                      style={{ background: onboardingData.speed === item.id ? item.color : 'transparent' }}
-                      disabled={!item.available}
-                    >
-                      {item.locked && (
-                        <div className="absolute top-2 right-2">
-                          <LockIcon size={16} className="text-gray-400" />
-                        </div>
-                      )}
-                      {onboardingData.speed === item.id && <div className="absolute inset-0 bg-white/10 animate-pulse"></div>}
-                      <span className={`text-xs font-bold uppercase tracking-wider mb-2 block ${onboardingData.speed === item.id ? 'text-white' : 'text-horizon'}`}>
-                        {item.badge}
-                      </span>
-                      <h4 className="font-sora text-2xl font-bold" style={{ color: onboardingData.speed === item.id ? 'white' : item.color }}>
-                        {item.title}
-                      </h4>
-                      {!item.available && (
-                        <span className="text-xs text-gray-400 mt-2 block">Complete 7-Day Challenge to Unlock</span>
-                      )}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {onboardingStep === 4 && (
-              <div className="text-center animate-slide-right">
-                <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <CheckCircle className="w-10 h-10 text-green-500" />
-                </div>
-                <h3 className="font-sora text-3xl font-bold mb-2">Your Path is Ready! 🎉</h3>
-                <p className="font-inter text-tiber/60 mb-8">Based on your goals, we've built the perfect roadmap for you.</p>
-                
-                <div className="bg-gradient-to-r from-tiber/5 to-downy/5 rounded-2xl p-6 border border-downy/30 shadow-xl mb-8 text-left flex items-start gap-4">
-                  <div className="bg-white p-3 rounded-xl shadow-md"><Compass className="w-8 h-8 text-downy" /></div>
-                  <div>
-                    <h4 className="font-sora font-bold text-xl mb-1">{onboardingData.speed === '7' ? 'The Clarity Blueprint' : 'Your Custom Path'}</h4>
-                    <p className="font-inter text-sm text-tiber/70 mb-3">Tailored for {onboardingData.level}s looking to {onboardingData.pull === 'escape' ? 'quit their jobs' : onboardingData.pull === 'income' ? 'scale their income' : 'travel the world'}.</p>
-                    <ul className="space-y-2"><li className="flex items-center gap-2 text-sm font-inter"><CheckCircle className="w-4 h-4 text-downy"/> Step-by-step action plan</li><li className="flex items-center gap-2 text-sm font-inter"><CheckCircle className="w-4 h-4 text-downy"/> 1-on-1 advisor matching</li><li className="flex items-center gap-2 text-sm font-inter"><CheckCircle className="w-4 h-4 text-downy"/> Community access</li></ul>
+          <motion.div 
+            className="glass-card rounded-3xl p-8 md:p-12 shadow-2xl relative overflow-hidden"
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+          >
+            <AnimatePresence mode="wait">
+              {onboardingStep < 4 && (
+                <motion.div 
+                  className="mb-10"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                >
+                  <div className="flex justify-between font-inter text-xs font-bold text-tiber/50 mb-2 uppercase tracking-wider">
+                    <span>Step {onboardingStep} of 3</span>
+                    <span>{Math.round((onboardingStep/3)*100)}%</span>
                   </div>
-                </div>
+                  <div className="h-2 w-full bg-tiber/10 rounded-full overflow-hidden">
+                    <motion.div 
+                      className="h-full bg-downy rounded-full"
+                      initial={{ width: 0 }}
+                      animate={{ width: `${(onboardingStep / 3) * 100}%` }}
+                      transition={{ duration: 0.5 }}
+                    />
+                  </div>
+                </motion.div>
+              )}
 
-                <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                  <button
-                    onClick={goToSevendays}
-                    className="bg-tiber text-white font-sora font-bold px-8 py-4 rounded-xl flex justify-center items-center gap-2 hover:bg-downy transition-all btn-glow"
-                  >
-                    Start My Challenge <Rocket className="w-5 h-5" />
-                  </button>
+              {onboardingStep === 1 && (
+                <motion.div
+                  initial={{ opacity: 0, x: 50 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -50 }}
+                  className="animate-slide-right"
+                >
+                  <h3 className="font-sora text-2xl font-bold mb-6 text-center">What's pulling you towards change?</h3>
+                  <div className="grid sm:grid-cols-3 gap-4">
+                    {[
+                      { id: 'escape', icon: BriefcaseIcon, title: 'Escape 9–5', desc: 'Break the corporate chains', color: '#0A3948' },
+                      { id: 'income', icon: DollarSign, title: 'Build Income', desc: 'Create financial freedom', color: '#5794A4' },
+                      { id: 'travel', icon: Globe, title: 'Travel Lifestyle', desc: 'Work from anywhere', color: '#64CDD1' }
+                    ].map((item, idx) => (
+                      <motion.button
+                        key={item.id}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: idx * 0.1 }}
+                        onClick={() => handleOnboardingSelect('pull', item.id)}
+                        whileHover={{ y: -5 }}
+                        className={`p-6 rounded-2xl border-2 text-left transition-all hover-lift ${onboardingData.pull === item.id ? 'border-downy bg-white shadow-xl scale-105' : 'border-gray-100 bg-white/80 hover:bg-white'}`}
+                      >
+                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4`} style={{ background: `${item.color}15` }}>
+                          <item.icon className="w-6 h-6" style={{ color: item.color }} />
+                        </div>
+                        <h4 className="font-sora font-bold mb-2 text-tiber">{item.title}</h4>
+                        <p className="font-inter text-sm text-tiber/60">{item.desc}</p>
+                      </motion.button>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
 
-                  <button
-                    onClick={resetOnboarding}
-                    className="text-tiber/60 font-inter text-sm underline hover:text-tiber"
+              {onboardingStep === 2 && (
+                <motion.div
+                  initial={{ opacity: 0, x: 50 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -50 }}
+                >
+                  <h3 className="font-sora text-2xl font-bold mb-6 text-center">Where are you starting from?</h3>
+                  <div className="flex flex-col sm:flex-row gap-6 justify-center">
+                    {[
+                      { id: 'beginner', title: 'Beginner', desc: 'No online income yet', icon: CoffeeIcon },
+                      { id: 'intermediate', title: 'Intermediate', desc: 'Already making some $$ online', icon: Rocket }
+                    ].map((item, idx) => (
+                      <motion.button
+                        key={item.id}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: idx * 0.1 }}
+                        onClick={() => handleOnboardingSelect('level', item.id)}
+                        whileHover={{ y: -5 }}
+                        className={`flex-1 p-8 rounded-2xl border-2 text-center transition-all hover-lift ${onboardingData.level === item.id ? 'border-downy bg-white shadow-xl scale-105' : 'border-gray-100 bg-white/80 hover:bg-white'}`}
+                      >
+                        <item.icon className="w-12 h-12 mx-auto mb-4 text-horizon" />
+                        <h4 className="font-sora text-xl font-bold mb-2 text-tiber">{item.title}</h4>
+                        <p className="font-inter text-sm text-tiber/60">{item.desc}</p>
+                      </motion.button>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+
+              {onboardingStep === 3 && (
+                <motion.div
+                  initial={{ opacity: 0, x: 50 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -50 }}
+                >
+                  <h3 className="font-sora text-2xl font-bold mb-6 text-center">How fast do you want to transform?</h3>
+                  <div className="grid sm:grid-cols-3 gap-4">
+                    {[
+                      { id: '7', title: '7 Days', badge: 'Clarity Seeker', color: '#64CDD1', available: true },
+                      { id: '30', title: '30 Days', badge: 'Income Builder', color: '#5794A4', available: false, locked: true },
+                      { id: '60', title: '60 Days', badge: 'Nomad Starter', color: '#0A3948', available: false, locked: true }
+                    ].map((item, idx) => (
+                      <motion.button
+                        key={item.id}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: idx * 0.1 }}
+                        onClick={() => item.available && handleOnboardingSelect('speed', item.id)}
+                        whileHover={item.available ? { y: -5 } : {}}
+                        className={`p-6 rounded-2xl border-2 text-center transition-all hover-lift relative overflow-hidden ${onboardingData.speed === item.id ? 'border-downy shadow-xl scale-105' : 'border-gray-100 bg-white/80'} ${!item.available ? 'cursor-not-allowed opacity-60' : 'hover:bg-white'}`}
+                        style={{ background: onboardingData.speed === item.id ? item.color : 'transparent' }}
+                        disabled={!item.available}
+                      >
+                        {item.locked && (
+                          <div className="absolute top-2 right-2">
+                            <LockIcon size={16} className="text-gray-400" />
+                          </div>
+                        )}
+                        {onboardingData.speed === item.id && <div className="absolute inset-0 bg-white/10 animate-pulse"></div>}
+                        <span className={`text-xs font-bold uppercase tracking-wider mb-2 block ${onboardingData.speed === item.id ? 'text-white' : 'text-horizon'}`}>
+                          {item.badge}
+                        </span>
+                        <h4 className="font-sora text-2xl font-bold" style={{ color: onboardingData.speed === item.id ? 'white' : item.color }}>
+                          {item.title}
+                        </h4>
+                        {!item.available && (
+                          <span className="text-xs text-gray-400 mt-2 block">Complete 7-Day Challenge to Unlock</span>
+                        )}
+                      </motion.button>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+
+              {onboardingStep === 4 && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="text-center"
+                >
+                  <motion.div 
+                    className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6"
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ type: 'spring', delay: 0.2 }}
                   >
-                    Retake Quiz
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
+                    <CheckCircle className="w-10 h-10 text-green-500" />
+                  </motion.div>
+                  <h3 className="font-sora text-3xl font-bold mb-2">Your Path is Ready! 🎉</h3>
+                  <p className="font-inter text-tiber/60 mb-8">Based on your goals, we've built the perfect roadmap for you.</p>
+                  
+                  <div className="bg-gradient-to-r from-tiber/5 to-downy/5 rounded-2xl p-6 border border-downy/30 shadow-xl mb-8 text-left flex items-start gap-4">
+                    <div className="bg-white p-3 rounded-xl shadow-md"><Compass className="w-8 h-8 text-downy" /></div>
+                    <div>
+                      <h4 className="font-sora font-bold text-xl mb-1">{onboardingData.speed === '7' ? 'The Clarity Blueprint' : 'Your Custom Path'}</h4>
+                      <p className="font-inter text-sm text-tiber/70 mb-3">Tailored for {onboardingData.level}s looking to {onboardingData.pull === 'escape' ? 'quit their jobs' : onboardingData.pull === 'income' ? 'scale their income' : 'travel the world'}.</p>
+                      <ul className="space-y-2"><li className="flex items-center gap-2 text-sm font-inter"><CheckCircle className="w-4 h-4 text-downy"/> Step-by-step action plan</li><li className="flex items-center gap-2 text-sm font-inter"><CheckCircle className="w-4 h-4 text-downy"/> 1-on-1 advisor matching</li><li className="flex items-center gap-2 text-sm font-inter"><CheckCircle className="w-4 h-4 text-downy"/> Community access</li></ul>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                    <motion.button
+                      onClick={goToSevendays}
+                      className="bg-tiber text-white font-sora font-bold px-8 py-4 rounded-xl flex justify-center items-center gap-2 hover:bg-downy transition-all btn-glow"
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      Start My Challenge <Rocket className="w-5 h-5" />
+                    </motion.button>
+
+                    <button
+                      onClick={resetOnboarding}
+                      className="text-tiber/60 font-inter text-sm underline hover:text-tiber"
+                    >
+                      Retake Quiz
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.div>
         </div>
       </section>
 
       {/* 5. PROGRAMS SHOWCASE */}
       <section id="programs" className="py-24 px-6 lg:px-20 max-w-[1440px] mx-auto">
-        <div className="text-center mb-16 reveal">
+        <div className="text-center mb-16">
           <h2 className="font-sora text-4xl font-bold mb-4 bg-gradient-to-r from-tiber to-horizon bg-clip-text text-transparent">Choose Your Transformation</h2>
           <p className="font-inter text-tiber/60 max-w-2xl mx-auto">Structured paths designed to get you from stuck to completely free.</p>
         </div>
@@ -881,7 +1229,15 @@ export default function Home() {
             { title: 'Income Engine', duration: '30 Days', desc: 'Land your first online client or launch your digital product.', outcome: 'First $1k online.', icon: DollarSign, color: '#5794A4', locked: true, message: 'Complete 7-Day Challenge first' },
             { title: 'Freedom Mastermind', duration: '60 Days', desc: 'Scale to consistent 5k/mo and optimize taxes & travel.', outcome: 'Full independence.', icon: Globe, color: '#0A3948', locked: true, message: 'Complete 7-Day Challenge first' }
           ].map((prog, i) => (
-            <div key={i} className="glass-card p-8 rounded-2xl hover-lift reveal transition-all hover:shadow-2xl relative" style={{transitionDelay: `${i * 100}ms`}}>
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.1 }}
+              whileHover={{ y: -8 }}
+              className="glass-card p-8 rounded-2xl transition-all hover:shadow-2xl relative"
+            >
               {prog.locked && (
                 <div className="absolute top-4 right-4">
                   <LockIcon size={20} className="text-gray-400" />
@@ -905,53 +1261,90 @@ export default function Home() {
               >
                 {prog.locked ? `🔒 ${prog.message}` : 'View Program'}
               </button>
-            </div>
+            </motion.div>
           ))}
         </div>
       </section>
 
       {/* 6. STORY SECTION */}
-      <section id="story" className="bg-tiber text-white py-24 relative overflow-hidden">
+      <section className="bg-tiber text-white py-24 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-96 h-96 bg-horizon/20 rounded-full blur-[120px]"></div>
         <div className="absolute bottom-0 left-0 w-96 h-96 bg-downy/10 rounded-full blur-[120px]"></div>
         <div className="max-w-[1440px] mx-auto px-6 lg:px-20 relative z-10">
           <div className="max-w-3xl">
-            <div className="reveal mb-16"><span className="text-horizon font-inter font-bold tracking-wider uppercase text-sm mb-4 block">The Problem</span><h2 className="font-sora text-4xl md:text-5xl font-bold leading-tight mb-6">You did everything "right", but it feels completely wrong.</h2><p className="font-inter text-lg text-white/80">You got the degree, landed the job, and climbed the ladder. But sitting in traffic for 2 hours a day to sit in a cubicle for 8 hours isn't the life you imagined.</p></div>
+            <div className="reveal mb-16">
+              <span className="text-horizon font-inter font-bold tracking-wider uppercase text-sm mb-4 block">The Problem</span>
+              <h2 className="font-sora text-4xl md:text-5xl font-bold leading-tight mb-6">You did everything "right", but it feels completely wrong.</h2>
+              <p className="font-inter text-lg text-white/80">You got the degree, landed the job, and climbed the ladder. But sitting in traffic for 2 hours a day to sit in a cubicle for 8 hours isn't the life you imagined.</p>
+            </div>
             <div className="w-px h-24 bg-gradient-to-b from-white/30 to-transparent ml-6 reveal"></div>
-            <div className="reveal my-16 pl-12 border-l border-horizon/40 relative"><div className="absolute -left-[17px] top-0 w-8 h-8 rounded-full bg-horizon flex items-center justify-center"><Shield className="w-4 h-4 text-tiber" /></div><span className="text-downy font-inter font-bold tracking-wider uppercase text-sm mb-4 block">The Guide</span><h3 className="font-sora text-3xl font-bold mb-4">Enter Nomads Advisors.</h3><p className="font-inter text-white/80">We're a collective of people who already broke the matrix. We don't just sell courses; we build personalized bridges from your current reality to true location independence.</p></div>
+            <div className="reveal my-16 pl-12 border-l border-horizon/40 relative">
+              <div className="absolute -left-[17px] top-0 w-8 h-8 rounded-full bg-horizon flex items-center justify-center"><Shield className="w-4 h-4 text-tiber" /></div>
+              <span className="text-downy font-inter font-bold tracking-wider uppercase text-sm mb-4 block">The Guide</span>
+              <h3 className="font-sora text-3xl font-bold mb-4">Enter Nomads Advisors.</h3>
+              <p className="font-inter text-white/80">We're a collective of people who already broke the matrix. We don't just sell courses; we build personalized bridges from your current reality to true location independence.</p>
+            </div>
             <div className="w-px h-24 bg-gradient-to-b from-white/30 to-transparent ml-6 reveal"></div>
-            <div className="reveal mt-16 pl-12 border-l border-downy/40 relative"><div className="absolute -left-[17px] top-0 w-8 h-8 rounded-full bg-downy flex items-center justify-center"><Zap className="w-4 h-4 text-tiber" /></div><span className="text-downy font-inter font-bold tracking-wider uppercase text-sm mb-4 block">The Vision</span><h3 className="font-sora text-3xl font-bold mb-4">Imagine waking up anywhere.</h3><p className="font-inter text-white/80 mb-8">Your laptop is your office. Your schedule is your own. You dictate your income, not a boss. This isn't a pipe dream—it's a structured, achievable reality.</p><button onClick={scrollToOnboarding} className="bg-downy text-tiber font-sora font-bold px-8 py-4 rounded-xl hover:bg-white transition-all hover:scale-105">Claim Your Freedom</button></div>
+            <div className="reveal mt-16 pl-12 border-l border-downy/40 relative">
+              <div className="absolute -left-[17px] top-0 w-8 h-8 rounded-full bg-downy flex items-center justify-center"><Zap className="w-4 h-4 text-tiber" /></div>
+              <span className="text-downy font-inter font-bold tracking-wider uppercase text-sm mb-4 block">The Vision</span>
+              <h3 className="font-sora text-3xl font-bold mb-4">Imagine waking up anywhere.</h3>
+              <p className="font-inter text-white/80 mb-8">Your laptop is your office. Your schedule is your own. You dictate your income, not a boss. This isn't a pipe dream—it's a structured, achievable reality.</p>
+              <button onClick={scrollToOnboarding} className="bg-downy text-tiber font-sora font-bold px-8 py-4 rounded-xl hover:bg-white transition-all hover:scale-105">Claim Your Freedom</button>
+            </div>
           </div>
         </div>
       </section>
 
       {/* 7. HOW IT WORKS SECTION (Original) */}
       <section className="py-24 px-6 lg:px-20 max-w-[1440px] mx-auto text-center">
-        <h2 className="font-sora text-4xl font-bold mb-16 reveal bg-gradient-to-r from-tiber to-horizon bg-clip-text text-transparent">How It Actually Works</h2>
-        <div className="flex flex-col md:flex-row justify-center items-center md:items-start gap-8 relative reveal">
+        <h2 className="font-sora text-4xl font-bold mb-16 bg-gradient-to-r from-tiber to-horizon bg-clip-text text-transparent">How It Actually Works</h2>
+        <div className="flex flex-col md:flex-row justify-center items-center md:items-start gap-8 relative">
           <div className="hidden md:block absolute top-12 left-[15%] right-[15%] h-1 bg-gradient-to-r from-powder via-downy to-powder z-0"></div>
           {[
             { step: '01', title: 'Discover', desc: 'Identify your transferable skills and build a high-demand freelance or creator offer.', icon: Target, color: '#64CDD1' },
             { step: '02', title: 'Build', desc: 'Set up your client acquisition systems and secure your first location-independent income.', icon: Rocket, color: '#5794A4' },
             { step: '03', title: 'Live', desc: 'Pack your bags, manage taxes globally, and join the community worldwide.', icon: Globe, color: '#0A3948' }
           ].map((item, i) => (
-            <div key={i} className="relative z-10 flex flex-col items-center max-w-sm">
-              <div className="w-28 h-28 rounded-full bg-white shadow-2xl flex items-center justify-center border-4 border-powder mb-6 relative hover:scale-110 transition-transform">
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.1 }}
+              className="relative z-10 flex flex-col items-center max-w-sm"
+            >
+              <motion.div 
+                className="w-28 h-28 rounded-full bg-white shadow-2xl flex items-center justify-center border-4 border-powder mb-6 relative hover:scale-110 transition-transform"
+                whileHover={{ scale: 1.1, rotate: 5 }}
+              >
                 <item.icon className="w-12 h-12" style={{ color: item.color }} />
                 <div className="absolute -top-2 -right-2 bg-downy text-tiber text-xs font-bold w-8 h-8 rounded-full flex items-center justify-center border-2 border-white">{item.step}</div>
-              </div>
+              </motion.div>
               <h3 className="font-sora text-2xl font-bold mb-3">{item.title}</h3>
               <p className="font-inter text-tiber/60 text-center">{item.desc}</p>
-            </div>
+            </motion.div>
           ))}
         </div>
       </section>
 
       {/* 8. SOCIAL PROOF CAROUSEL */}
       <section className="py-24 px-6 overflow-hidden bg-white/30">
-        <div className="max-w-[1440px] mx-auto reveal">
+        <div className="max-w-[1440px] mx-auto">
           <div className="flex flex-col md:flex-row justify-between items-end mb-12">
-            <div><h2 className="font-sora text-4xl font-bold mb-4 bg-gradient-to-r from-tiber to-horizon bg-clip-text text-transparent">Proof It Works</h2><div className="flex gap-8"><div><span className="block text-3xl font-extrabold text-horizon">1,000+</span><span className="text-sm text-tiber/50">Lives Changed</span></div><div><span className="block text-3xl font-extrabold text-horizon">$5M+</span><span className="text-sm text-tiber/50">Income Generated</span></div></div></div>
+            <div>
+              <h2 className="font-sora text-4xl font-bold mb-4 bg-gradient-to-r from-tiber to-horizon bg-clip-text text-transparent">Proof It Works</h2>
+              <div className="flex gap-8">
+                <div>
+                  <span className="block text-3xl font-extrabold text-horizon">1,000+</span>
+                  <span className="text-sm text-tiber/50">Lives Changed</span>
+                </div>
+                <div>
+                  <span className="block text-3xl font-extrabold text-horizon">$5M+</span>
+                  <span className="text-sm text-tiber/50">Income Generated</span>
+                </div>
+              </div>
+            </div>
             <div className="flex gap-4 mt-6 md:mt-0">
               <button onClick={() => setActiveTestimonial(prev => prev === 0 ? testimonials.length - 1 : prev - 1)} className="w-12 h-12 rounded-full border-2 border-tiber flex items-center justify-center hover:bg-tiber hover:text-white transition-colors"><ChevronRight className="w-6 h-6 rotate-180" /></button>
               <button onClick={() => setActiveTestimonial(prev => prev === testimonials.length - 1 ? 0 : prev + 1)} className="w-12 h-12 rounded-full border-2 border-tiber flex items-center justify-center hover:bg-tiber hover:text-white transition-colors"><ChevronRight className="w-6 h-6" /></button>
@@ -959,14 +1352,7 @@ export default function Home() {
           </div>
           <div className="relative h-[320px] md:h-[280px] w-full max-w-4xl mx-auto">
             {testimonials.map((t, i) => (
-              <div key={i} className={`absolute inset-0 glass-card p-8 md:p-10 rounded-2xl transition-all duration-500 transform ${i === activeTestimonial ? 'opacity-100 translate-x-0 scale-100 z-10 shadow-2xl' : 'opacity-0 translate-x-20 scale-95 z-0'}`}>
-                <div className="flex gap-1 mb-6"><Star className="w-5 h-5 fill-current text-yellow-400" /><Star className="w-5 h-5 fill-current text-yellow-400" /><Star className="w-5 h-5 fill-current text-yellow-400" /><Star className="w-5 h-5 fill-current text-yellow-400" /><Star className="w-5 h-5 fill-current text-yellow-400" /></div>
-                <p className="font-sora text-xl md:text-2xl font-bold mb-8 text-tiber/80 italic">"{t.quote}"</p>
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-horizon/20 rounded-full flex items-center justify-center text-tiber font-bold text-xl">{t.name[0]}</div>
-                  <div><h4 className="font-bold font-sora text-tiber">{t.name} <span className="font-normal text-sm text-tiber/50">| {t.role}</span></h4><p className="font-inter text-xs text-tiber/50 mt-1"><span className="line-through mr-2">Before: {t.before}</span><span className="text-horizon font-semibold">After: {t.after}</span></p></div>
-                </div>
-              </div>
+              <TestimonialCard key={i} testimonial={t} isActive={i === activeTestimonial} />
             ))}
           </div>
         </div>
@@ -975,7 +1361,7 @@ export default function Home() {
       {/* 9. COMMUNITY SECTION WITH 5 SLIDING PHOTOS */}
       <section id="community" className="py-24 px-6 lg:px-20 max-w-[1440px] mx-auto">
         <div className="grid md:grid-cols-2 gap-16 items-center mb-20">
-          <div className="reveal order-2 md:order-1 relative">
+          <div className="order-2 md:order-1 relative">
             <div className="glass-card rounded-3xl border-[6px] border-white shadow-2xl overflow-hidden max-w-sm mx-auto transform -rotate-2 hover:rotate-0 transition-all duration-500">
               <div className="bg-gradient-to-r from-[#075E54] to-[#128C7E] text-white p-4 flex items-center gap-3">
                 <MessageCircle className="w-6 h-6" />
@@ -991,7 +1377,7 @@ export default function Home() {
             <div className="absolute -z-10 bottom-10 -right-10 w-32 h-32 bg-horizon/20 rounded-full blur-2xl"></div>
           </div>
           
-          <div className="reveal order-1 md:order-2">
+          <div className="order-1 md:order-2">
             <div className="inline-flex items-center gap-2 bg-white px-4 py-2 rounded-full mb-6 shadow-sm"><MessageCircle className="w-4 h-4 text-downy" /><span className="font-inter text-sm font-semibold text-tiber">Nomad Nexus</span></div>
             <h2 className="font-sora text-4xl md:text-5xl font-bold mb-6">You're never alone on this journey.</h2>
             <p className="font-inter text-lg text-tiber/70 mb-8 leading-relaxed">Gain instant access to our private WhatsApp community. Find accountability partners, share wins, troubleshoot client issues, and join local meetups anywhere in the world.</p>
@@ -1000,7 +1386,7 @@ export default function Home() {
           </div>
         </div>
 
-        {/* 5 Sliding Photos Section - Using Imported Images */}
+        {/* 5 Sliding Photos Section */}
         <div className="mt-8 pt-8">
           <div className="text-center mb-12">
             <h3 className="font-sora text-3xl font-bold text-tiber mb-2">Our Global Community in Action</h3>
@@ -1062,13 +1448,49 @@ export default function Home() {
       <section className="py-24 px-6 relative">
         <div className="absolute inset-0 bg-gradient-to-br from-tiber to-horizon z-0"></div>
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-downy/20 rounded-full blur-[120px] z-0"></div>
-        <div className="max-w-4xl mx-auto relative z-10 text-center reveal">
-          <h2 className="font-sora text-5xl md:text-6xl font-extrabold text-white mb-8 leading-tight">A year from now, you'll wish you started <span className="text-downy">today.</span></h2>
-          <p className="font-inter text-xl text-white/80 mb-12 max-w-2xl mx-auto">The time will pass anyway. You can either be sitting in the same chair, or sitting on a beach designing your own day.</p>
-          <div className="flex flex-col sm:flex-row gap-6 justify-center">
-            <button onClick={scrollToOnboarding} className="bg-downy text-tiber font-sora text-xl font-bold px-10 py-5 rounded-2xl shadow-2xl hover:bg-white transition-all transform hover:-translate-y-1 btn-glow flex items-center justify-center gap-2">Start Your Journey <ArrowRight className="w-6 h-6" /></button>
-          </div>
-          <p className="mt-8 font-inter text-sm text-white/60 flex items-center justify-center gap-2"><Shield className="w-4 h-4" /> 14-Day Money Back Guarantee • Cancel Anytime</p>
+        <div className="max-w-4xl mx-auto relative z-10 text-center">
+          <motion.h2 
+            className="font-sora text-5xl md:text-6xl font-extrabold text-white mb-8 leading-tight"
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+          >
+            A year from now, you'll wish you started <span className="text-downy">today.</span>
+          </motion.h2>
+          <motion.p 
+            className="font-inter text-xl text-white/80 mb-12 max-w-2xl mx-auto"
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.2 }}
+          >
+            The time will pass anyway. You can either be sitting in the same chair, or sitting on a beach designing your own day.
+          </motion.p>
+          <motion.div 
+            className="flex flex-col sm:flex-row gap-6 justify-center"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.4 }}
+          >
+            <motion.button 
+              onClick={scrollToOnboarding} 
+              className="bg-downy text-tiber font-sora text-xl font-bold px-10 py-5 rounded-2xl shadow-2xl hover:bg-white transition-all transform hover:-translate-y-1 btn-glow flex items-center justify-center gap-2"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              Start Your Journey <ArrowRight className="w-6 h-6" />
+            </motion.button>
+          </motion.div>
+          <motion.p 
+            className="mt-8 font-inter text-sm text-white/60 flex items-center justify-center gap-2"
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.6 }}
+          >
+            <Shield className="w-4 h-4" /> 14-Day Money Back Guarantee • Cancel Anytime
+          </motion.p>
         </div>
       </section>
 
