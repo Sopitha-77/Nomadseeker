@@ -1,61 +1,76 @@
-import { useIkigai } from "../context/IkigaiContext";
+import { useIkigai, PALETTE } from "../context/IkigaiContext";
 
 const MESSAGES = [
-  "You're making progress. Stay consistent and finish strong.",
-  "Your Ikigai is getting clearer with each step.",
-  "Every answer brings you closer to clarity.",
-  "Keep going — the best insights are ahead.",
-  "You're doing great. Honest answers matter most.",
-  "Almost there. Your purpose is taking shape.",
+  "You're making real progress. Stay with it — your clarity is forming.",
+  "Your Ikigai is taking shape with every honest answer.",
+  "Every reflection moves you one step closer to your purpose.",
+  "Keep going — the most powerful insights are still ahead.",
+  "You're doing great. The honesty in your answers will shape the outcome.",
+  "Almost there. Your purpose is becoming unmistakably yours.",
 ];
 
 export default function ProgressBar() {
   const { currentDayData, dayIndex, questionIndex, allDays } = useIkigai();
 
-  const totalQuestions = allDays.reduce((s, d) => s + d.questions.length, 0);
+  const totalQuestions = allDays.reduce((s, d) => s + (d.questions?.length || 0), 0) || 1;
   const answeredSoFar =
-    allDays.slice(0, dayIndex).reduce((s, d) => s + d.questions.length, 0) +
+    allDays.slice(0, dayIndex).reduce((s, d) => s + (d.questions?.length || 0), 0) +
     Math.max(0, questionIndex);
   const pct = Math.round((answeredSoFar / totalQuestions) * 100);
   const message = MESSAGES[dayIndex % MESSAGES.length];
+  const color = currentDayData.color || PALETTE.tiber;
 
   return (
-    <div style={{ marginBottom: 28 }}>
+    <div style={{
+      marginBottom: 24,
+      background: "rgba(255,255,255,0.65)",
+      backdropFilter: "blur(16px)",
+      WebkitBackdropFilter: "blur(16px)",
+      borderRadius: 20,
+      padding: "clamp(14px,3vw,18px) clamp(16px,3vw,22px)",
+      border: `1px solid rgba(255,255,255,0.6)`,
+      boxShadow: "0 4px 24px rgba(26,54,93,0.06)",
+    }}>
       {/* Header row */}
       <div style={{
         display: "flex", justifyContent: "space-between",
         alignItems: "center", marginBottom: 14,
+        flexWrap: "wrap", gap: 10,
       }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
           <div style={{
             width: 36, height: 36, borderRadius: "50%",
             background: "rgba(255,255,255,0.9)",
-            border: `2.5px solid ${currentDayData.color}`,
+            border: `2.5px solid ${color}`,
             display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: 16, color: currentDayData.color,
-            boxShadow: `0 0 12px ${currentDayData.color}33`,
+            fontSize: 16, color,
+            boxShadow: `0 0 12px ${color}33`,
+            flexShrink: 0,
           }}>
             {currentDayData.icon}
           </div>
-          <div>
+          <div style={{ minWidth: 0 }}>
             <div style={{
-              fontSize: 14, fontWeight: 700, color: "#1a1a1a", lineHeight: 1.2,
+              fontSize: 14, fontWeight: 700, color: PALETTE.tiber,
+              lineHeight: 1.2, whiteSpace: "nowrap",
+              overflow: "hidden", textOverflow: "ellipsis",
             }}>
               Day {currentDayData.day} — {currentDayData.title}
             </div>
-            <div style={{ fontSize: 11, color: "#999" }}>
+            <div style={{ fontSize: 11, color: "rgba(0,0,0,0.45)" }}>
               {currentDayData.subtitle}
             </div>
           </div>
         </div>
 
         <div style={{
-          fontSize: 14, fontWeight: 800, color: currentDayData.color,
+          fontSize: 14, fontWeight: 800, color,
           background: "rgba(255,255,255,0.9)",
           backdropFilter: "blur(8px)",
-          padding: "5px 12px", borderRadius: 24,
-          border: `1.5px solid ${currentDayData.accent || currentDayData.color + "44"}`,
-          boxShadow: `0 2px 12px ${currentDayData.color}22`,
+          padding: "5px 14px", borderRadius: 24,
+          border: `1.5px solid ${currentDayData.accent || color + "44"}`,
+          boxShadow: `0 2px 12px ${color}22`,
+          flexShrink: 0,
         }}>
           {pct}%
         </div>
@@ -69,17 +84,18 @@ export default function ProgressBar() {
       }}>
         <div style={{
           height: "100%", borderRadius: 50,
-          background: `linear-gradient(90deg, ${currentDayData.color}bb, ${currentDayData.color})`,
+          background: `linear-gradient(90deg, ${color}bb, ${color})`,
           width: `${Math.max(pct, 2)}%`,
           transition: "width 0.8s cubic-bezier(.22,.68,0,1.2)",
           position: "relative",
+          boxShadow: `0 0 10px ${color}66`,
         }}>
           {pct > 8 && (
             <div style={{
               position: "absolute", right: 4, top: "50%",
               transform: "translateY(-50%)",
               width: 4, height: 4, borderRadius: "50%",
-              background: "rgba(255,255,255,0.8)",
+              background: "rgba(255,255,255,0.85)",
             }} />
           )}
         </div>
@@ -99,11 +115,9 @@ export default function ProgressBar() {
             }}>
               <div style={{
                 height: active ? 5 : 4, borderRadius: 50, flex: 1,
-                background: done
-                  ? d.color
-                  : active
-                    ? `linear-gradient(90deg, ${d.color}66, ${d.color})`
-                    : "rgba(0,0,0,0.08)",
+                background: done ? d.color
+                  : active ? `linear-gradient(90deg, ${d.color}66, ${d.color})`
+                  : "rgba(0,0,0,0.08)",
                 transition: "all 0.4s ease",
               }} />
               <div style={{
@@ -122,7 +136,7 @@ export default function ProgressBar() {
 
       {/* Motivational message */}
       <p style={{
-        fontSize: 12, color: "rgba(0,0,0,0.4)",
+        fontSize: 12, color: "rgba(0,0,0,0.5)",
         fontStyle: "italic", margin: 0, lineHeight: 1.5,
       }}>
         {message}

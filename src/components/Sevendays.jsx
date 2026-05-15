@@ -1,989 +1,1028 @@
-import { useEffect, useState } from "react";
-import { useIkigai } from "../context/IkigaiContext";
-import ProgressBar from "./ProgressBar";
-import QuestionCard from "./QuestionCard";
-import IkigaiChart from "./IkigaiChart";
 
-function StyleInjector() {
-  useEffect(() => {
-    const id = "iki-global-styles";
-    if (document.getElementById(id)) return;
-    const s = document.createElement("style");
-    s.id = id;
-    s.textContent = `
-      @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;600;700&display=swap');
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import questionsData from '../data/questions.js'; // Import the actual questions data
 
-      @keyframes fadeUp    { from{opacity:0;transform:translateY(28px)} to{opacity:1;transform:translateY(0)} }
-      @keyframes fadeIn    { from{opacity:0} to{opacity:1} }
-      @keyframes scaleIn   { from{opacity:0;transform:scale(0.88)} to{opacity:1;transform:scale(1)} }
-      @keyframes float     { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
-      @keyframes floatSlow { 0%,100%{transform:translateY(0) translateX(0)} 33%{transform:translateY(-18px) translateX(12px)} 66%{transform:translateY(12px) translateX(-12px)} }
-      @keyframes spin      { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
-      @keyframes pulse     { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.6;transform:scale(0.95)} }
-      @keyframes shimmer   { 0%{background-position:-200% center} 100%{background-position:200% center} }
+/* ─── DESIGN TOKENS ─────────────────────────────────────────── */
+const C = {
+  darkNavy:  'rgb(26,54,93)',
+  blue:      'rgb(43,108,176)',
+  lightBlue: 'rgb(74,144,226)',
+  pale1:     'rgb(214,239,255)',
+  pale2:     'rgb(185,226,255)',
+  success:   'rgb(34,197,94)',
+  error:     'rgb(239,68,68)',
+};
+const G = {
+  bg:       `linear-gradient(to bottom, ${C.pale1}, ${C.pale2}, ${C.lightBlue})`,
+  btn:      `linear-gradient(to right, ${C.blue}, ${C.darkNavy})`,
+  heading:  `linear-gradient(135deg, ${C.darkNavy}, ${C.blue}, ${C.lightBlue})`,
+  glass80:  'rgba(255,255,255,0.80)',
+  glass65:  'rgba(255,255,255,0.65)',
+  glass50:  'rgba(255,255,255,0.50)',
+  glass40:  'rgba(255,255,255,0.40)',
+  glass15:  'rgba(255,255,255,0.15)',
+  border60: 'rgba(255,255,255,0.6)',
+  border40: 'rgba(255,255,255,0.4)',
+  blueBorder:'rgba(74,144,226,0.3)',
+};
 
-      @keyframes confettiFall {
-        0%  { transform: translateY(-20px) rotate(0deg); opacity: 1; }
-        100%{ transform: translateY(110vh) rotate(720deg); opacity: 0; }
-      }
-      @keyframes starPop {
-        0%   { transform: scale(0) rotate(-20deg); opacity: 0; }
-        60%  { transform: scale(1.2) rotate(8deg); opacity: 1; }
-        100% { transform: scale(1) rotate(0deg); opacity: 1; }
-      }
-      @keyframes celebSlide {
-        from { opacity:0; transform: translateY(40px) scale(0.94); }
-        to   { opacity:1; transform: translateY(0) scale(1); }
-      }
-      @keyframes roleCardIn {
-        from { opacity:0; transform: translateY(32px) scale(0.95); }
-        to   { opacity:1; transform: translateY(0) scale(1); }
-      }
+/* ─── GLOBAL STYLES ─────────────────────────────────────────── */
+const GlobalStyles = () => (
+  <style>{`
+    @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800;900&family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap');
+    *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+    body { font-family:'Manrope',sans-serif; overflow-x:hidden; }
+    ::-webkit-scrollbar { width:6px; }
+    ::-webkit-scrollbar-track { background:rgba(185,226,255,0.3); }
+    ::-webkit-scrollbar-thumb { background:linear-gradient(180deg,rgb(74,144,226),rgb(43,108,176)); border-radius:4px; }
 
-      * { box-sizing:border-box; margin:0; padding:0; }
-      html { scroll-behavior:smooth; }
+    @keyframes blobDrift  { 0%,100%{transform:translate(0,0) scale(1)} 33%{transform:translate(40px,-30px) scale(1.08)} 66%{transform:translate(-25px,35px) scale(0.95)} }
+    @keyframes floatSlow  { 0%,100%{transform:translateY(0) translateX(0)} 33%{transform:translateY(-18px) translateX(12px)} 66%{transform:translateY(12px) translateX(-12px)} }
+    @keyframes float3     { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+    @keyframes spinRing   { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+    @keyframes pulseGlow  { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.6;transform:scale(.95)} }
+    @keyframes fadeUp     { from{opacity:0;transform:translateY(28px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes scaleIn    { from{opacity:0;transform:scale(0.88)} to{opacity:1;transform:scale(1)} }
+    @keyframes celebSlide { from{opacity:0;transform:translateY(36px) scale(.94)} to{opacity:1;transform:translateY(0) scale(1)} }
+    @keyframes starPop    { 0%{transform:scale(0) rotate(-20deg);opacity:0} 60%{transform:scale(1.2) rotate(8deg);opacity:1} 100%{transform:scale(1) rotate(0);opacity:1} }
+    @keyframes pulseDot   { 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(1.5);opacity:.6} }
+    @keyframes confettiFall { 0%{transform:translateY(-20px) rotate(0);opacity:1} 100%{transform:translateY(110vh) rotate(720deg);opacity:0} }
+    @keyframes roleCardIn { from{opacity:0;transform:translateY(32px) scale(.95)} to{opacity:1;transform:translateY(0) scale(1)} }
 
-      ::-webkit-scrollbar { width: 6px; }
-      ::-webkit-scrollbar-track { background: rgba(0,0,0,0.04); }
-      ::-webkit-scrollbar-thumb { background: rgba(100,205,209,0.5); border-radius: 4px; }
+    .btn-primary { transition:transform .25s ease,box-shadow .25s ease; }
+    .btn-primary:hover { transform:translateY(-3px); }
+    .role-card { transition:all .3s cubic-bezier(.22,.68,0,1.2); }
+    .role-card:hover { transform:translateY(-8px); }
+    .sidebar-item { transition:all .25s ease; }
+    .sidebar-item:hover { background:rgba(74,144,226,0.08); }
+  `}</style>
+);
 
-      .iki-sidebar-inner { display: none; }
-      @media (min-width: 900px) {
-        .iki-sidebar-inner { display: block; }
-      }
+/* ─── BLOB BACKGROUND ───────────────────────────────────────── */
+const BlobBg = () => (
+  <div style={{position:'fixed',inset:0,zIndex:0,overflow:'hidden',pointerEvents:'none'}}>
+    <div style={{position:'absolute',top:'-8%',left:'-6%',width:520,height:520,borderRadius:'50%',
+      background:'radial-gradient(circle,rgba(255,255,255,0.5) 0%,transparent 70%)',
+      animation:'blobDrift 20s ease-in-out infinite'}}/>
+    <div style={{position:'absolute',top:'30%',right:'-10%',width:600,height:600,borderRadius:'50%',
+      background:'radial-gradient(circle,rgba(43,108,176,0.4) 0%,transparent 70%)',
+      animation:'blobDrift 26s ease-in-out infinite reverse'}}/>
+    <div style={{position:'absolute',bottom:'5%',left:'35%',width:460,height:460,borderRadius:'50%',
+      background:G.glass15,filter:'blur(60px)',animation:'blobDrift 32s ease-in-out infinite'}}/>
+    <div style={{position:'absolute',top:'45%',right:'15%',width:300,height:300,borderRadius:'50%',
+      background:'radial-gradient(circle,rgba(74,144,226,0.18),transparent 70%)',
+      filter:'blur(40px)',animation:'blobDrift 38s ease-in-out infinite'}}/>
+  </div>
+);
 
-      .role-card-hover:hover {
-        transform: translateY(-6px) !important;
-      }
-    `;
-    document.head.appendChild(s);
-  }, []);
-  return null;
-}
+/* ─── FLOATING PARTICLES ────────────────────────────────────── */
+const FloatingParticles = () => (
+  <div style={{position:'fixed',inset:0,zIndex:0,overflow:'hidden',pointerEvents:'none'}}>
+    {Array.from({length:18},(_,i)=>({
+      left:`${(i*31)%100}`, top:`${(i*47)%100}`,
+      size:2+(i%4),dur:18+(i%8),delay:-(i%10),
+    })).map((p,i)=>(
+      <div key={i} style={{
+        position:'absolute', left:`${p.left}%`, top:`${p.top}%`,
+        width:p.size, height:p.size, borderRadius:'50%',
+        background:`rgba(74,144,226,${.1+(i%4)*.07})`,
+        animation:`floatSlow ${p.dur}s ease-in-out infinite`,
+        animationDelay:`${p.delay}s`,
+      }}/>
+    ))}
+  </div>
+);
 
-function FloatingParticles() {
-  const particles = Array.from({ length: 18 }, (_, i) => ({
-    id: i,
-    left: Math.random() * 100,
-    top: Math.random() * 100,
-    size: 2 + Math.random() * 4,
-    dur: 18 + Math.random() * 18,
-    delay: -(Math.random() * 18),
-  }));
+/* ─── CONFETTI ──────────────────────────────────────────────── */
+const Confetti = ({count=60}) => {
+  const cols=[C.darkNavy,C.blue,C.lightBlue,'#fff','#FFD700','#F43F5E',C.pale2];
   return (
-    <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0, overflow: "hidden" }}>
-      {particles.map((p) => (
-        <div key={p.id} style={{
-          position: "absolute",
-          left: `${p.left}%`, top: `${p.top}%`,
-          width: p.size, height: p.size, borderRadius: "50%",
-          background: `rgba(100,205,209,${0.08 + Math.random() * 0.18})`,
-          animation: `floatSlow ${p.dur}s ease-in-out infinite`,
-          animationDelay: `${p.delay}s`,
-        }} />
+    <div style={{position:'fixed',inset:0,pointerEvents:'none',zIndex:200,overflow:'hidden'}}>
+      {Array.from({length:count},(_,i)=>(
+        <motion.div key={i}
+          initial={{y:-20,x:`${(i*13)%100}vw`,rotate:0,opacity:1}}
+          animate={{y:'110vh',rotate:720,opacity:0}}
+          transition={{duration:2.4+(i%3)*.4,delay:(i%12)*.07,ease:'easeOut'}}
+          style={{position:'absolute',width:6+(i%7),height:6+(i%7),
+            borderRadius:i%2===0?'50%':'2px',background:cols[i%cols.length]}}
+        />
       ))}
     </div>
   );
-}
+};
 
-function Confetti({ count = 60 }) {
-  const colours = ["#e85d4a", "#f0942a", "#3a9e6e", "#5b6af0", "#9b59b6", "#2196a8", "#64CDD1", "#FFD700"];
-  const pieces = Array.from({ length: count }, (_, i) => ({
-    id: i,
-    left: Math.random() * 100,
-    color: colours[i % colours.length],
-    size: 6 + Math.random() * 8,
-    dur: 2.2 + Math.random() * 2.2,
-    delay: Math.random() * 1.2,
-    shape: Math.random() > 0.5 ? "circle" : "rect",
-  }));
-  return (
-    <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 200, overflow: "hidden" }}>
-      {pieces.map((p) => (
-        <div key={p.id} style={{
-          position: "absolute", left: `${p.left}%`, top: -20,
-          width: p.shape === "circle" ? p.size : p.size * 0.7, height: p.size,
-          borderRadius: p.shape === "circle" ? "50%" : 2,
-          background: p.color,
-          animation: `confettiFall ${p.dur}s ease-in forwards`,
-          animationDelay: `${p.delay}s`, opacity: 0,
-        }} />
-      ))}
-    </div>
-  );
-}
+/* ─── GLASS CARD ─────────────────────────────────────────────── */
+const Glass = ({children,style={},className='',...p}) => (
+  <div className={className} style={{
+    background:G.glass80, backdropFilter:'blur(20px)',
+    border:`1px solid ${G.border60}`,
+    boxShadow:'0 8px 32px rgba(26,54,93,0.07)',
+    ...style,
+  }} {...p}>{children}</div>
+);
 
-function RoleSelect() {
-  const { selectRoleAndBegin } = useIkigai();
-  const [chosen, setChosen] = useState(null);
-  const [vis, setVis] = useState(false);
-
-  useEffect(() => {
-    const t = setTimeout(() => setVis(true), 40);
-    return () => clearTimeout(t);
-  }, []);
-
-  const roles = [
-    {
-      id: "entrepreneur",
-      icon: "🌍",
-      name: "Entrepreneur",
-      tagline: "Build & Found",
-      desc: "Startups, ventures, independent businesses & bold ideas",
-      traits: ["Visionary", "Risk-taker", "Founder"],
-      color: "#e85d4a",
-      bg: "#fff5f3",
-      border: "#e85d4a33",
-      glow: "rgba(232,93,74,0.18)",
-    },
-    {
-      id: "managerial",
-      icon: "📊",
-      name: "Managerial",
-      tagline: "Lead & Organise",
-      desc: "Corporate leadership, team management & process excellence",
-      traits: ["Leader", "Planner", "Coordinator"],
-      color: "#5b6af0",
-      bg: "#f3f4ff",
-      border: "#5b6af033",
-      glow: "rgba(91,106,240,0.18)",
-    },
-    {
-      id: "technician",
-      icon: "🔧",
-      name: "Technician",
-      tagline: "Build & Craft",
-      desc: "Software, engineering, product building & technical mastery",
-      traits: ["Developer", "Engineer", "Builder"],
-      color: "#3a9e6e",
-      bg: "#f0fbf5",
-      border: "#3a9e6e33",
-      glow: "rgba(58,158,110,0.18)",
-    },
-  ];
-
+/* ─── NAVBAR (MINIMAL STICKY TOP) ─────────────────────────────────── */
+const Navbar = ({screen,completedDays,allDays,currentDay,roleMeta,isMobile}) => {
+  if (screen==='landing') return null;
   return (
     <div style={{
-      opacity: vis ? 1 : 0,
-      transform: vis ? "translateY(0)" : "translateY(20px)",
-      transition: "all 0.6s cubic-bezier(.22,.68,0,1.2)",
-      textAlign: "center",
-      padding: "clamp(40px,8vw,72px) clamp(16px,4vw,32px) clamp(40px,6vw,56px)",
+      background:G.glass80, backdropFilter:'blur(16px)',
+      borderBottom:`1px solid rgba(74,144,226,0.2)`,
+      padding:'0 16px', height:56,
+      display:'flex', alignItems:'center', justifyContent:'space-between',
+      position:'sticky', top:0, zIndex:100,
     }}>
-      <div style={{
-        display: "inline-flex", alignItems: "center", gap: 8,
-        background: "rgba(100,205,209,0.12)",
-        border: "1.5px solid rgba(100,205,209,0.35)",
-        borderRadius: 50, padding: "6px 18px",
-        marginBottom: 24, fontSize: 12, color: "#5794A4", fontWeight: 700,
-        letterSpacing: 0.5,
-      }}>
-        <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#64CDD1", display: "inline-block" }} />
-        Step 1 of 2 — Choose Your Path
+      <div style={{display:'flex',alignItems:'center',gap:8}}>
+        <span style={{fontSize:20}}>☯</span>
+        <span style={{fontFamily:'Sora,sans-serif',fontSize:isMobile?13:16,fontWeight:700,
+          background:G.heading,WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',backgroundClip:'text'}}>
+          Ikigai Journey
+        </span>
+        {roleMeta?.label && screen!=='roleSelect' && !isMobile && (
+          <span style={{padding:'3px 10px',borderRadius:99,fontSize:10,fontWeight:700,
+            background:'rgba(74,144,226,0.12)',color:C.blue,
+            border:`1px solid rgba(74,144,226,0.25)`}}>
+            {roleMeta.icon} {roleMeta.label}
+          </span>
+        )}
       </div>
+      {screen==='journey' && !isMobile && (
+        <div style={{display:'flex',alignItems:'center',gap:4}}>
+          {allDays.map(d=>{
+            const done=completedDays.includes(d.day);
+            const active=currentDay===d.day;
+            return (
+              <div key={d.day} style={{
+                width:active?20:6,height:6,borderRadius:99,
+                background:done?d.color:active?d.color:'rgba(0,0,0,0.1)',
+                transition:'all .35s ease',
+                boxShadow:active?`0 0 0 2px ${d.color}28`:'none',
+              }}/>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
 
-      <h2 style={{
-        fontFamily: "'Playfair Display', serif",
-        fontSize: "clamp(28px,5vw,42px)",
-        background: "linear-gradient(135deg, #1a1a2e, #64CDD1, #5b6af0)",
-        WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent",
-        marginBottom: 14, lineHeight: 1.2,
-      }}>
-        Who are you on<br /><em>this journey?</em>
-      </h2>
+/* ─── SIDEBAR ────────────────────────────────────────────────── */
+const Sidebar = ({allDays,currentDay,completedDays,roleMeta}) => (
+  <div style={{width:220,flexShrink:0,display:{xs:'none', md:'block'}}}>
+    <div style={{
+      position:'sticky',top:72,
+      background:G.glass80, backdropFilter:'blur(16px)',
+      borderRadius:20, padding:'18px 14px',
+      boxShadow:'0 4px 28px rgba(26,54,93,0.08)',
+      border:`1px solid rgba(74,144,226,0.2)`,
+    }}>
+      {roleMeta?.label && (
+        <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:16,padding:'7px 10px',
+          background:'rgba(74,144,226,0.08)',borderRadius:10,border:`1px solid rgba(74,144,226,0.18)`}}>
+          <span style={{fontSize:15}}>{roleMeta.icon}</span>
+          <div>
+            <div style={{fontSize:10,fontWeight:800,letterSpacing:1.5,textTransform:'uppercase',color:C.blue}}>{roleMeta.label}</div>
+            <div style={{fontSize:10,color:`rgba(26,54,93,0.45)`}}>Your path</div>
+          </div>
+        </div>
+      )}
+      <div style={{fontSize:10,fontWeight:800,letterSpacing:2.5,textTransform:'uppercase',marginBottom:14,
+        background:`linear-gradient(90deg,${C.blue},${C.lightBlue})`,
+        WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',backgroundClip:'text'}}>
+        Your Journey
+      </div>
+      <div style={{display:'flex',flexDirection:'column',gap:5}}>
+        {allDays.map(d=>{
+          const done=completedDays.includes(d.day);
+          const active=currentDay===d.day;
+          return (
+            <div key={d.day} className="sidebar-item" style={{
+              display:'flex',alignItems:'center',gap:8,
+              padding:'8px 10px',borderRadius:12,
+              background:active?`${d.color}12`:'transparent',
+              border:`1.5px solid ${active?d.color+'30':'transparent'}`,
+            }}>
+              <div style={{
+                width:28,height:28,borderRadius:'50%',flexShrink:0,
+                background:done?`linear-gradient(135deg,${d.color},${d.color}bb)`:active?`${d.color}15`:'rgba(0,0,0,0.05)',
+                border:`2px solid ${done||active?d.color:'rgba(0,0,0,0.1)'}`,
+                display:'flex',alignItems:'center',justifyContent:'center',
+                fontSize:done?10:12,color:done?'#fff':d.color,
+                boxShadow:active?`0 2px 10px ${d.color}30`:'none',
+                transition:'all .25s ease',
+              }}>
+                {done?'✓':d.icon}
+              </div>
+              <div>
+                <div style={{fontSize:12,fontWeight:active?700:done?500:400,lineHeight:1.3,
+                  color:active?d.color:done?`rgba(26,54,93,0.55)`:`rgba(26,54,93,0.3)`}}>
+                  {d.title}
+                </div>
+                {active&&<div style={{fontSize:10,color:`rgba(26,54,93,0.4)`,marginTop:1}}>{d.subtitle}</div>}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <div style={{marginTop:18,padding:'12px',
+        background:'linear-gradient(135deg,rgba(74,144,226,0.08),rgba(43,108,176,0.05))',
+        borderRadius:12,borderLeft:`3px solid ${C.lightBlue}`}}>
+        <p style={{fontSize:11,color:`rgba(26,54,93,0.6)`,lineHeight:1.65,fontStyle:'italic',margin:0}}>
+          "The place where your talents and the world's needs cross — there lies your vocation."
+        </p>
+        <p style={{fontSize:10,color:`rgba(26,54,93,0.35)`,marginTop:5}}>— Aristotle</p>
+      </div>
+    </div>
+  </div>
+);
 
-      <p style={{
-        fontSize: "clamp(14px,2vw,16px)", color: "#777",
-        lineHeight: 1.75, maxWidth: 420, margin: "0 auto 48px",
-      }}>
-        Your questions, insights, and Ikigai will be fully tailored to your role and goals.
+/* ─── LOADING ────────────────────────────────────────────────── */
+const LoadingScreen = () => {
+  const msgs=['Gathering your passions…','Mapping your strengths…','Weaving your purpose…','Almost ready…'];
+  const [phase,setPhase]=useState(0);
+  useEffect(()=>{const t=setInterval(()=>setPhase(p=>(p+1)%msgs.length),1900);return()=>clearInterval(t);},[]);
+  return (
+    <div style={{textAlign:'center',padding:'80px 20px'}}>
+      <div style={{position:'relative',width:90,height:90,margin:'0 auto 28px'}}>
+        {[0,1,2].map(i=>(
+          <div key={i} style={{
+            position:'absolute',inset:i*11,borderRadius:'50%',
+            border:`2.5px solid ${[C.lightBlue,C.blue,C.darkNavy][i]}`,
+            opacity:.3+i*.25,
+            animation:`spinRing ${1.4+i*.45}s linear infinite ${i%2?'reverse':''}`,
+          }}/>
+        ))}
+        <div style={{
+          position:'absolute',inset:33,borderRadius:'50%',
+          background:`linear-gradient(135deg,${C.lightBlue},${C.blue})`,
+          animation:'pulseGlow 1.6s ease-in-out infinite',
+        }}/>
+      </div>
+      <h3 style={{fontFamily:'Sora,sans-serif',fontSize:24,fontWeight:800,
+        background:G.heading,WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',backgroundClip:'text',
+        marginBottom:12}}>Revealing your Ikigai</h3>
+      <p style={{fontSize:15,color:`rgba(26,54,93,0.5)`}}>{msgs[phase]}</p>
+    </div>
+  );
+};
+
+/* ─── LANDING ────────────────────────────────────────────────── */
+const Landing = ({onStart}) => {
+  const days=[
+    {icon:'♡',label:'Passion',    color:C.lightBlue},
+    {icon:'◎',label:'Lifestyle',  color:C.blue},
+    {icon:'◈',label:'Skills',     color:C.darkNavy},
+    {icon:'◆',label:'Career',     color:C.lightBlue},
+    {icon:'✦',label:'Purpose',    color:C.blue},
+    {icon:'◉',label:'Vision',     color:C.darkNavy},
+  ];
+  return (
+    <div style={{textAlign:'center',padding:'clamp(40px,7vw,72px) 16px clamp(36px,5vw,56px)',animation:'fadeUp .7s ease both'}}>
+      <div style={{display:'inline-block',padding:'6px 22px',borderRadius:99,
+        background:'rgba(74,144,226,0.12)',border:`1.5px solid rgba(74,144,226,0.35)`,
+        fontSize:12,color:C.blue,marginBottom:22,fontWeight:800,letterSpacing:.5}}>
+        6-Day Self-Discovery Journey
+      </div>
+      <h1 style={{fontFamily:'Playfair Display,serif',fontSize:'clamp(34px,6vw,60px)',
+        background:G.heading,WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',backgroundClip:'text',
+        marginBottom:18,lineHeight:1.12,letterSpacing:'-.02em'}}>
+        Discover Your<br/><em>Ikigai</em>
+      </h1>
+      <p style={{fontSize:'clamp(14px,2vw,17px)',color:`rgba(26,54,93,0.7)`,lineHeight:1.8,
+        maxWidth:520,margin:'0 auto 10px'}}>
+        A personalised 6-day journey to discover your true purpose — tailored to your unique role and ambitions.
+      </p>
+      <p style={{fontSize:13,color:`rgba(26,54,93,0.5)`,marginBottom:36}}>
+        Choose your path. Answer honestly. Your results will be uniquely yours.
       </p>
 
-      <div style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
-        gap: 16, maxWidth: 720, margin: "0 auto 44px",
-      }}>
-        {roles.map((r, i) => {
-          const isChosen = chosen === r.id;
-          return (
-            <div
-              key={r.id}
-              onClick={() => setChosen(r.id)}
-              className="role-card-hover"
-              style={{
-                padding: "28px 22px 24px",
-                borderRadius: 24, cursor: "pointer", textAlign: "center",
-                background: isChosen ? r.bg : "rgba(255,255,255,0.88)",
-                border: isChosen ? `2px solid ${r.color}` : "1.5px solid rgba(0,0,0,0.08)",
-                backdropFilter: "blur(10px)",
-                transition: "all 0.3s cubic-bezier(.22,.68,0,1.2)",
-                transform: isChosen ? "translateY(-8px)" : "translateY(0)",
-                boxShadow: isChosen ? `0 16px 40px ${r.glow}` : "0 2px 12px rgba(0,0,0,0.05)",
-                position: "relative",
-                // FIXED: use animation-fill-mode: both so final opacity:1 persists
-                animation: `roleCardIn 0.55s cubic-bezier(.22,.68,0,1.2) ${0.1 + i * 0.1}s both`,
-              }}
-            >
-              {isChosen && (
-                <div style={{
-                  position: "absolute", top: 14, right: 14,
-                  width: 24, height: 24, borderRadius: "50%",
-                  background: r.color, color: "#fff",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  fontSize: 12, fontWeight: 800,
-                }}>✓</div>
-              )}
+      <div style={{display:'grid',gridTemplateColumns:'repeat(6,1fr)',gap:8,maxWidth:560,margin:'0 auto 36px'}}>
+        {days.map((d,i)=>(
+          <div key={d.label}
+            style={{padding:'12px 4px',borderRadius:16,textAlign:'center',
+              background:G.glass65,backdropFilter:'blur(12px)',
+              border:`1.5px solid ${d.color}22`,
+              boxShadow:`0 2px 12px ${d.color}10`,
+              animation:`fadeUp .6s ease ${.2+i*.06}s both`,
+              transition:'transform .2s ease',cursor:'default'}}
+            onMouseEnter={e=>{e.currentTarget.style.transform='translateY(-6px)';}}
+            onMouseLeave={e=>{e.currentTarget.style.transform='translateY(0)';}}>
+            <div style={{fontSize:18,marginBottom:4,color:d.color}}>{d.icon}</div>
+            <div style={{fontSize:8,fontWeight:800,color:d.color,textTransform:'uppercase',letterSpacing:.5}}>Day {i+1}</div>
+            <div style={{fontSize:7,color:`rgba(26,54,93,0.55)`,fontWeight:400,marginTop:2}}>{d.label}</div>
+          </div>
+        ))}
+      </div>
 
-              <div style={{
-                width: 64, height: 64, borderRadius: "50%",
-                background: isChosen ? r.bg : "rgba(0,0,0,0.04)",
-                border: `2px solid ${isChosen ? r.color : "rgba(0,0,0,0.08)"}`,
-                display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: 28, margin: "0 auto 16px",
-                boxShadow: isChosen ? `0 4px 16px ${r.glow}` : "none",
-                transition: "all 0.3s ease",
+      <div style={{display:'flex',gap:9,justifyContent:'center',flexWrap:'wrap',marginBottom:32}}>
+        {[{label:'🌍 Entrepreneur',color:C.lightBlue,bg:'rgba(74,144,226,0.1)'},
+          {label:'📊 Managerial',  color:C.blue,     bg:'rgba(43,108,176,0.1)'},
+          {label:'🔧 Technician',  color:C.darkNavy,  bg:'rgba(26,54,93,0.08)'}].map(r=>(
+          <span key={r.label} style={{padding:'6px 14px',borderRadius:99,fontSize:12,
+            background:r.bg,color:r.color,border:`1.5px solid ${r.color}33`,fontWeight:700}}>{r.label}</span>
+        ))}
+      </div>
+
+      <button className="btn-primary" onClick={onStart}
+        style={{display:'inline-flex',alignItems:'center',gap:12,padding:'14px 40px',
+          borderRadius:50,border:'none',
+          background:G.btn,color:'#fff',cursor:'pointer',
+          fontFamily:'Sora,sans-serif',fontWeight:800,fontSize:16,
+          boxShadow:`0 10px 36px rgba(74,144,226,0.45)`}}>
+        Choose Your Path <span style={{fontSize:22}}>→</span>
+      </button>
+      <p style={{fontSize:12,color:`rgba(26,54,93,0.4)`,marginTop:14}}>Takes about 10–15 minutes · 3 roles to choose from</p>
+    </div>
+  );
+};
+
+/* ─── ROLE SELECT ────────────────────────────────────────────── */
+const RoleSelect = ({onSelect}) => {
+  const [chosen,setChosen]=useState(null);
+  const roles=[
+    {id:'entrepreneur',icon:'🌍',name:'Entrepreneur',tagline:'Build & Found',
+      desc:'Startups, ventures, independent businesses & bold ideas',
+      traits:['Visionary','Risk-taker','Founder'],color:C.lightBlue,bg:'rgba(74,144,226,0.08)',glow:'rgba(74,144,226,0.2)'},
+    {id:'managerial',  icon:'📊',name:'Managerial',  tagline:'Lead & Organise',
+      desc:'Corporate leadership, team management & process excellence',
+      traits:['Leader','Planner','Coordinator'],color:C.blue,bg:'rgba(43,108,176,0.08)',glow:'rgba(43,108,176,0.2)'},
+    {id:'technician',  icon:'🔧',name:'Technician',  tagline:'Build & Craft',
+      desc:'Software, engineering, product building & technical mastery',
+      traits:['Developer','Engineer','Builder'],color:C.darkNavy,bg:'rgba(26,54,93,0.07)',glow:'rgba(26,54,93,0.15)'},
+  ];
+  return (
+    <div style={{textAlign:'center',padding:'clamp(32px,6vw,56px) 16px'}}>
+      <div style={{display:'inline-flex',alignItems:'center',gap:8,
+        background:'rgba(74,144,226,0.12)',border:`1.5px solid rgba(74,144,226,0.35)`,
+        borderRadius:50,padding:'6px 18px',marginBottom:20,fontSize:12,color:C.blue,fontWeight:800,letterSpacing:.5}}>
+        <span style={{width:7,height:7,borderRadius:'50%',background:C.lightBlue,display:'inline-block',animation:'pulseDot 2s infinite'}}/>
+        Step 1 of 2 — Choose Your Path
+      </div>
+      <h2 style={{fontFamily:'Playfair Display,serif',fontSize:'clamp(26px,5vw,42px)',
+        background:G.heading,WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',backgroundClip:'text',
+        marginBottom:12,lineHeight:1.2}}>
+        Who are you on<br/><em>this journey?</em>
+      </h2>
+      <p style={{fontSize:'clamp(14px,2vw,16px)',color:`rgba(26,54,93,0.65)`,lineHeight:1.75,maxWidth:440,margin:'0 auto 36px'}}>
+        Your questions, insights, and Ikigai will be fully tailored to your role and goals.
+      </p>
+      <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(250px,1fr))',gap:14,maxWidth:800,margin:'0 auto 36px'}}>
+        {roles.map((r,i)=>{
+          const sel=chosen===r.id;
+          return (
+            <div key={r.id} className="role-card"
+              onClick={()=>setChosen(r.id)}
+              style={{
+                padding:'20px 16px',borderRadius:22,cursor:'pointer',textAlign:'center',
+                background:sel?r.bg:G.glass80,backdropFilter:'blur(12px)',
+                border:`${sel?2:1.5}px solid ${sel?r.color:G.border60}`,
+                boxShadow:sel?`0 16px 40px ${r.glow}`:'0 2px 12px rgba(0,0,0,0.05)',
+                transform:sel?'translateY(-8px)':'none',
+                position:'relative',
+                animation:`roleCardIn .55s cubic-bezier(.22,.68,0,1.2) ${.08+i*.1}s both`,
               }}>
+              {sel&&<div style={{position:'absolute',top:12,right:12,width:22,height:22,borderRadius:'50%',
+                background:r.color,color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',
+                fontSize:11,fontWeight:800}}>✓</div>}
+              <div style={{width:55,height:55,borderRadius:'50%',
+                background:sel?r.bg:'rgba(0,0,0,0.04)',
+                border:`2px solid ${sel?r.color:'rgba(0,0,0,0.08)'}`,
+                display:'flex',alignItems:'center',justifyContent:'center',
+                fontSize:24,margin:'0 auto 12px',
+                boxShadow:sel?`0 4px 16px ${r.glow}`:'none',
+                transition:'all .3s ease'}}>
                 {r.icon}
               </div>
-
-              <div style={{
-                fontSize: 10, fontWeight: 800, letterSpacing: 2,
-                textTransform: "uppercase", color: isChosen ? r.color : "#aaa",
-                marginBottom: 6, transition: "color 0.2s",
-              }}>{r.tagline}</div>
-
-              <div style={{
-                fontSize: 18, fontWeight: 700,
-                color: isChosen ? r.color : "#1a1a1a",
-                marginBottom: 10, fontFamily: "'Playfair Display', serif",
-                transition: "color 0.2s",
-              }}>{r.name}</div>
-
-              <div style={{ fontSize: 13, color: "#888", lineHeight: 1.6, marginBottom: 16 }}>{r.desc}</div>
-
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 6, justifyContent: "center" }}>
-                {r.traits.map((t) => (
-                  <span key={t} style={{
-                    padding: "4px 11px", borderRadius: 50, fontSize: 11,
-                    background: isChosen ? r.bg : "rgba(0,0,0,0.04)",
-                    color: isChosen ? r.color : "#999",
-                    border: `1px solid ${isChosen ? r.border : "rgba(0,0,0,0.06)"}`,
-                    fontWeight: 600, transition: "all 0.2s",
-                  }}>{t}</span>
+              <div style={{fontSize:9,fontWeight:800,letterSpacing:2,textTransform:'uppercase',
+                color:sel?r.color:`rgba(26,54,93,0.35)`,marginBottom:4}}>{r.tagline}</div>
+              <div style={{fontFamily:'Sora,sans-serif',fontSize:16,fontWeight:800,
+                color:sel?r.color:C.darkNavy,marginBottom:6}}>{r.name}</div>
+              <div style={{fontSize:12,color:`rgba(26,54,93,0.6)`,lineHeight:1.5,marginBottom:12}}>{r.desc}</div>
+              <div style={{display:'flex',flexWrap:'wrap',gap:4,justifyContent:'center'}}>
+                {r.traits.map(t=>(
+                  <span key={t} style={{padding:'3px 8px',borderRadius:99,fontSize:10,
+                    background:sel?r.bg:'rgba(0,0,0,0.04)',color:sel?r.color:`rgba(26,54,93,0.5)`,
+                    border:`1px solid ${sel?r.color+'44':'rgba(0,0,0,0.06)'}`,fontWeight:600}}>{t}</span>
                 ))}
               </div>
             </div>
           );
         })}
       </div>
-
       <button
-        onClick={() => chosen && selectRoleAndBegin(chosen)}
+        onClick={()=>chosen&&onSelect(chosen)}
         disabled={!chosen}
+        className="btn-primary"
         style={{
-          display: "inline-flex", alignItems: "center", gap: 12,
-          padding: "18px 52px", borderRadius: 50,
-          fontSize: 17, fontWeight: 700, border: "none",
-          background: chosen
-            ? `linear-gradient(135deg, ${roles.find((r) => r.id === chosen)?.color || "#64CDD1"}, ${roles.find((r) => r.id === chosen)?.color || "#64CDD1"}bb)`
-            : "rgba(0,0,0,0.08)",
-          color: chosen ? "#fff" : "rgba(0,0,0,0.25)",
-          cursor: chosen ? "pointer" : "not-allowed",
-          fontFamily: "'DM Sans', sans-serif",
-          boxShadow: chosen ? `0 10px 36px ${roles.find((r) => r.id === chosen)?.glow || "rgba(100,205,209,0.4)"}` : "none",
-          transition: "all 0.3s cubic-bezier(.22,.68,0,1.2)",
-        }}
-        onMouseEnter={(e) => { if (chosen) e.currentTarget.style.transform = "translateY(-3px)"; }}
-        onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; }}
-      >
-        {chosen ? `Begin as ${roles.find((r) => r.id === chosen)?.name} →` : "Select a path to continue"}
+          display:'inline-flex',alignItems:'center',gap:12,padding:'14px 40px',
+          borderRadius:50,border:'none',cursor:chosen?'pointer':'not-allowed',
+          background:chosen?G.btn:'rgba(0,0,0,0.08)',
+          color:chosen?'#fff':'rgba(0,0,0,0.25)',
+          fontFamily:'Sora,sans-serif',fontWeight:800,fontSize:15,
+          boxShadow:chosen?`0 10px 36px rgba(43,108,176,0.4)`:'none',
+        }}>
+        {chosen?`Begin as ${roles.find(r=>r.id===chosen)?.name} →`:'Select a path to continue'}
       </button>
-
-      <p style={{ fontSize: 12, color: "#bbb", marginTop: 16 }}>
-        Takes about 10–15 minutes · 6 days · 36 questions
-      </p>
+      <p style={{fontSize:12,color:`rgba(26,54,93,0.38)`,marginTop:14}}>Takes about 10–15 minutes · 6 days · 60 questions</p>
     </div>
   );
-}
+};
 
-function DayCelebration() {
-  const { justCompletedDay, afterCelebration, allDays, roleMeta } = useIkigai();
-  const [show, setShow] = useState(false);
-
-  useEffect(() => {
-    const t = setTimeout(() => setShow(true), 100);
-    return () => clearTimeout(t);
-  }, []);
-
-  const isLastDay = justCompletedDay === allDays.length;
-  const dayData = allDays[justCompletedDay - 1] || allDays[0];
-  const nextDay = allDays[justCompletedDay] || null;
-
-  const celebMessages = [
-    { headline: "Day 1 Complete!", sub: "You've uncovered what you love. Your passion is your compass." },
-    { headline: "Day 2 Complete!", sub: "You've designed your ideal life. Vision shapes reality." },
-    { headline: "Day 3 Complete!", sub: "Your strengths are crystal clear. You know what makes you powerful." },
-    { headline: "Day 4 Complete!", sub: "Career clarity achieved. You know how you want to grow and earn." },
-    { headline: "Day 5 Complete!", sub: "Your purpose is defined. You know the impact you want to leave." },
-    { headline: "Journey Complete!", sub: "All 6 days done. Your Ikigai is ready to be revealed!" },
-  ];
-
-  const msg = celebMessages[(justCompletedDay - 1) % celebMessages.length];
-
+/* ─── DAY INTRO ──────────────────────────────────────────────── */
+const DayIntro = ({dayData,onStart,isMobile}) => {
+  const {day,color,icon,title,subtitle,description}=dayData;
   return (
-    <>
-      <Confetti count={isLastDay ? 100 : 60} />
-      <div style={{
-        position: "fixed", inset: 0,
-        background: "rgba(10,10,30,0.65)",
-        backdropFilter: "blur(6px)",
-        zIndex: 150,
-        display: "flex", alignItems: "center", justifyContent: "center",
-        padding: "20px",
-      }}>
-        <div style={{
-          background: "rgba(255,255,255,0.97)",
-          borderRadius: 28,
-          padding: "clamp(32px,5vw,52px) clamp(24px,5vw,52px)",
-          textAlign: "center",
-          maxWidth: 460, width: "100%",
-          boxShadow: "0 24px 80px rgba(0,0,0,0.25)",
-          animation: "celebSlide 0.6s cubic-bezier(.22,.68,0,1.2) both",
-          position: "relative", overflow: "hidden",
-        }}>
-          <div style={{
-            position: "absolute", top: 0, left: 0, right: 0, height: 5,
-            background: `linear-gradient(90deg, ${dayData.color || "#64CDD1"}, ${(dayData.color || "#64CDD1")}88)`,
-          }} />
-
-          <div style={{ display: "flex", justifyContent: "center", gap: 8, marginBottom: 24, marginTop: 8 }}>
-            {Array.from({ length: isLastDay ? 6 : 3 }).map((_, i) => (
-              <div key={i} style={{
-                fontSize: isLastDay ? 28 : 24,
-                animation: `starPop 0.5s cubic-bezier(.22,.68,0,1.8) ${i * 0.1}s both`,
-              }}>
-                {isLastDay ? "🌟" : "⭐"}
-              </div>
-            ))}
-          </div>
-
-          {roleMeta.label && (
-            <div style={{
-              display: "inline-flex", alignItems: "center", gap: 6,
-              background: "rgba(100,205,209,0.1)",
-              border: "1px solid rgba(100,205,209,0.3)",
-              borderRadius: 50, padding: "4px 14px",
-              marginBottom: 10,
-            }}>
-              <span style={{ fontSize: 12 }}>{roleMeta.icon}</span>
-              <span style={{ fontSize: 11, fontWeight: 700, color: "#5794A4", letterSpacing: 1 }}>
-                {roleMeta.label} Journey
-              </span>
-            </div>
-          )}
-
-          <div style={{
-            display: "inline-flex", alignItems: "center", gap: 8,
-            background: dayData.bg || "#f5f5f5",
-            border: `1.5px solid ${(dayData.color || "#64CDD1") + "44"}`,
-            borderRadius: 50, padding: "6px 18px", marginBottom: 18,
-          }}>
-            <span style={{ fontSize: 16, color: dayData.color }}>{dayData.icon}</span>
-            <span style={{
-              fontSize: 12, fontWeight: 700, color: dayData.color,
-              textTransform: "uppercase", letterSpacing: 1.5,
-            }}>
-              Day {justCompletedDay} — {dayData.title}
-            </span>
-          </div>
-
-          <h2 style={{
-            fontFamily: "'Playfair Display', serif",
-            fontSize: "clamp(22px,4vw,30px)", color: "#111",
-            marginBottom: 12, lineHeight: 1.25,
-          }}>{msg.headline}</h2>
-
-          <p style={{
-            fontSize: "clamp(14px,2vw,16px)", color: "#666",
-            lineHeight: 1.7, marginBottom: 32,
-            maxWidth: 340, margin: "0 auto 32px",
-          }}>{msg.sub}</p>
-
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, justifyContent: "center", marginBottom: 28 }}>
-            {allDays.slice(0, justCompletedDay).map((d) => (
-              <span key={d.day} style={{
-                padding: "5px 12px", borderRadius: 50, fontSize: 12,
-                background: d.bg, color: d.color,
-                border: `1.5px solid ${d.color}55`,
-                fontWeight: 600,
-                display: "inline-flex", alignItems: "center", gap: 5,
-              }}>
-                <span style={{ fontSize: 10 }}>✓</span>
-                {d.title}
-              </span>
-            ))}
-          </div>
-
-          <button
-            onClick={afterCelebration}
-            style={{
-              display: "inline-flex", alignItems: "center", gap: 10,
-              padding: "15px 40px", borderRadius: 50,
-              fontSize: 16, fontWeight: 700, border: "none",
-              background: isLastDay
-                ? "linear-gradient(135deg, #e85d4a, #f0942a)"
-                : `linear-gradient(135deg, ${nextDay?.color || dayData.color}, ${nextDay?.color || dayData.color}cc)`,
-              color: "#fff", cursor: "pointer",
-              fontFamily: "'DM Sans', sans-serif",
-              boxShadow: isLastDay
-                ? "0 8px 28px rgba(232,93,74,0.45)"
-                : `0 8px 28px ${nextDay?.color || dayData.color}44`,
-              transition: "all 0.25s ease",
-              width: "100%", justifyContent: "center",
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-3px)"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; }}
-          >
-            {isLastDay ? "Reveal My Ikigai 🌸" : `Continue to Day ${justCompletedDay + 1}: ${nextDay?.title} →`}
-          </button>
-
-          {isLastDay && (
-            <p style={{ fontSize: 12, color: "#bbb", marginTop: 12 }}>
-              Your results are being personalised just for you
-            </p>
-          )}
+    <div style={{textAlign:'center',padding:'clamp(24px,4vw,40px) 16px clamp(28px,4vw,44px)',animation:'scaleIn .5s ease both'}}>
+      <div style={{position:'relative',display:'inline-block',marginBottom:24}}>
+        <div style={{width:isMobile?80:100,height:isMobile?80:100,borderRadius:'50%',
+          background:G.glass80,backdropFilter:'blur(10px)',
+          border:`3px solid ${color}`,
+          display:'flex',alignItems:'center',justifyContent:'center',
+          fontSize:isMobile?36:42,boxShadow:`0 0 0 10px ${color}12,0 12px 40px ${color}25`,
+          animation:'float3 3.5s ease-in-out infinite'}}>
+          {icon}
         </div>
+        <div style={{position:'absolute',top:-4,right:-4,width:24,height:24,borderRadius:'50%',
+          background:`linear-gradient(135deg,${color},${color}bb)`,
+          color:'#fff',fontSize:10,fontWeight:800,
+          display:'flex',alignItems:'center',justifyContent:'center',
+          boxShadow:`0 3px 10px ${color}55`}}>{day}</div>
       </div>
-    </>
-  );
-}
-
-function Sidebar() {
-  const { allDays, currentDayData, completedDays, roleMeta } = useIkigai();
-  return (
-    <div className="iki-sidebar-inner" style={{ width: 248, flexShrink: 0 }}>
-      <div style={{
-        position: "sticky", top: 88,
-        background: "rgba(255,255,255,0.88)",
-        backdropFilter: "blur(14px)",
-        borderRadius: 22,
-        padding: "22px 18px",
-        boxShadow: "0 4px 32px rgba(0,0,0,0.07)",
-        border: "1px solid rgba(100,205,209,0.18)",
-      }}>
-        {roleMeta.label && (
-          <div style={{
-            display: "flex", alignItems: "center", gap: 8,
-            marginBottom: 18, padding: "8px 12px",
-            background: roleMeta.bg || "rgba(100,205,209,0.08)",
-            borderRadius: 12,
-            border: `1px solid ${roleMeta.accent || "rgba(100,205,209,0.2)"}`,
-          }}>
-            <span style={{ fontSize: 16 }}>{roleMeta.icon}</span>
-            <div>
-              <div style={{
-                fontSize: 10, fontWeight: 800, letterSpacing: 1.5,
-                textTransform: "uppercase", color: roleMeta.color || "#5794A4",
-              }}>{roleMeta.label}</div>
-              <div style={{ fontSize: 10, color: "#aaa" }}>Your path</div>
-            </div>
-          </div>
-        )}
-
-        <div style={{
-          fontSize: 10, fontWeight: 800, letterSpacing: 2.5,
-          textTransform: "uppercase", marginBottom: 18,
-          background: "linear-gradient(90deg, #5794A4, #64CDD1)",
-          WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent",
-        }}>Your Journey</div>
-
-        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          {allDays.map((d) => {
-            const done = completedDays.includes(d.day);
-            const active = currentDayData.day === d.day;
-            return (
-              <div key={d.day} style={{
-                display: "flex", alignItems: "center", gap: 10,
-                padding: "10px 12px", borderRadius: 14,
-                background: active ? d.bg : "transparent",
-                border: `1.5px solid ${active ? d.color + "44" : "transparent"}`,
-                transition: "all 0.25s ease",
-              }}>
-                <div style={{
-                  width: 30, height: 30, borderRadius: "50%",
-                  background: done
-                    ? `linear-gradient(135deg, ${d.color}, ${d.color}cc)`
-                    : active ? d.bg : "#f5f5f5",
-                  border: `2px solid ${done || active ? d.color : "#e0e0e0"}`,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  fontSize: done ? 12 : 14,
-                  color: done ? "#fff" : d.color,
-                  flexShrink: 0, transition: "all 0.25s ease",
-                  boxShadow: active ? `0 2px 10px ${d.color}44` : "none",
-                }}>
-                  {done ? "✓" : d.icon}
-                </div>
-                <div>
-                  <div style={{
-                    fontSize: 13, lineHeight: 1.3,
-                    fontWeight: active ? 700 : done ? 500 : 400,
-                    color: active ? d.color : done ? "#777" : "#bbb",
-                  }}>{d.title}</div>
-                  {active && (
-                    <div style={{ fontSize: 10, color: "#aaa", marginTop: 1 }}>{d.subtitle}</div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        <div style={{
-          marginTop: 22, padding: "14px",
-          background: "linear-gradient(135deg, rgba(100,205,209,0.08), rgba(87,148,164,0.06))",
-          borderRadius: 14,
-          borderLeft: "3px solid #64CDD1",
-        }}>
-          <p style={{ fontSize: 11.5, color: "#888", lineHeight: 1.65, fontStyle: "italic", margin: 0 }}>
-            "The place where your <strong>talents</strong> and the world's <strong>needs</strong> cross — there lies your vocation."
-          </p>
-          <p style={{ fontSize: 10.5, color: "#bbb", marginTop: 6 }}>— Aristotle</p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function DayIntro() {
-  const { currentDayData, startDay } = useIkigai();
-  const { day, color, bg, accent, icon, title, subtitle, description } = currentDayData;
-  const [vis, setVis] = useState(false);
-  useEffect(() => { const t = setTimeout(() => setVis(true), 40); return () => clearTimeout(t); }, [day]);
-
-  return (
-    <div style={{
-      opacity: vis ? 1 : 0,
-      transform: vis ? "scale(1)" : "scale(0.92)",
-      transition: "all 0.5s cubic-bezier(.22,.68,0,1.2)",
-      textAlign: "center", padding: "clamp(20px,4vw,40px) 20px",
-    }}>
-      <div style={{ position: "relative", display: "inline-block", marginBottom: 28 }}>
-        <div style={{
-          width: 110, height: 110, borderRadius: "50%",
-          background: "rgba(255,255,255,0.88)",
-          backdropFilter: "blur(10px)",
-          border: `3px solid ${color}`,
-          display: "flex", alignItems: "center", justifyContent: "center",
-          fontSize: 46, color,
-          boxShadow: `0 0 0 12px ${color}12, 0 14px 44px ${color}33`,
-          animation: "float 3.5s ease-in-out infinite",
-        }}>{icon}</div>
-        <div style={{
-          position: "absolute", top: -4, right: -4,
-          width: 28, height: 28, borderRadius: "50%",
-          background: `linear-gradient(135deg, ${color}, ${color}cc)`,
-          color: "#fff", fontSize: 12, fontWeight: 800,
-          display: "flex", alignItems: "center", justifyContent: "center",
-          boxShadow: `0 3px 10px ${color}55`,
-        }}>{day}</div>
-      </div>
-
-      <div style={{ fontSize: 11, color, fontWeight: 800, letterSpacing: 3, textTransform: "uppercase", marginBottom: 12 }}>
+      <div style={{fontSize:11,color,fontWeight:800,letterSpacing:3,textTransform:'uppercase',marginBottom:10}}>
         Day {day} of 6
       </div>
-
-      <h2 style={{
-        fontFamily: "'Playfair Display', serif",
-        fontSize: "clamp(26px,5vw,38px)",
-        background: `linear-gradient(135deg, #1a1a2e, ${color})`,
-        WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent",
-        marginBottom: 10, lineHeight: 1.2,
-      }}>{title}</h2>
-
-      <p style={{ fontSize: "clamp(14px,2vw,16px)", color: "#777", marginBottom: 10 }}>{subtitle}</p>
-      <p style={{ fontSize: 14, color: "#aaa", lineHeight: 1.75, maxWidth: 400, margin: "0 auto 36px" }}>
-        {description}
-      </p>
-
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "center", marginBottom: 36 }}>
-        {["3 open questions", "2 multi-select", "1 choice"].map((t) => (
-          <span key={t} style={{
-            padding: "6px 15px", borderRadius: 50, fontSize: 12,
-            background: bg, color, border: `1.5px solid ${accent || color + "44"}`,
-            fontWeight: 600,
-          }}>{t}</span>
+      <h2 style={{fontFamily:'Playfair Display,serif',fontSize:'clamp(24px,5vw,38px)',
+        background:`linear-gradient(135deg,${C.darkNavy},${color})`,
+        WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',backgroundClip:'text',
+        marginBottom:8,lineHeight:1.2}}>{title}</h2>
+      <p style={{fontSize:'clamp(13px,2vw,15px)',color:`rgba(26,54,93,0.6)`,marginBottom:8}}>{subtitle}</p>
+      <p style={{fontSize:14,color:`rgba(26,54,93,0.5)`,lineHeight:1.75,maxWidth:380,margin:'0 auto 28px'}}>{description}</p>
+      <div style={{display:'flex',flexWrap:'wrap',gap:7,justifyContent:'center',marginBottom:28}}>
+        {['3 MCQ questions','3 multi-select','4 writing questions'].map(t=>(
+          <span key={t} style={{padding:'4px 12px',borderRadius:99,fontSize:11,
+            background:`${color}10`,color,border:`1.5px solid ${color}30`,fontWeight:600}}>{t}</span>
         ))}
       </div>
-
-      <button
-        onClick={startDay}
-        style={{
-          display: "inline-flex", alignItems: "center", gap: 10,
-          padding: "16px 44px", borderRadius: 50,
-          fontSize: 16, fontWeight: 700, border: "none",
-          background: `linear-gradient(135deg, ${color}, ${color}cc)`,
-          color: "#fff", cursor: "pointer",
-          fontFamily: "'DM Sans', sans-serif",
-          boxShadow: `0 8px 30px ${color}55`,
-          transition: "all 0.25s ease",
-        }}
-        onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = `0 14px 38px ${color}66`; }}
-        onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = `0 8px 30px ${color}55`; }}
-      >
-        Start Day {day} <span style={{ fontSize: 18 }}>→</span>
+      <button className="btn-primary" onClick={onStart}
+        style={{display:'inline-flex',alignItems:'center',gap:10,padding:'12px 32px',borderRadius:50,
+          border:'none',background:`linear-gradient(135deg,${color},${color}cc)`,
+          color:'#fff',cursor:'pointer',fontFamily:'Sora,sans-serif',fontWeight:800,fontSize:isMobile?14:16,
+          boxShadow:`0 8px 28px ${color}45`}}>
+        Start Day {day} <span style={{fontSize:18}}>→</span>
       </button>
     </div>
   );
-}
+};
 
-function DayTabs() {
-  const { allDays, currentDayData, completedDays } = useIkigai();
-  return (
-    <div style={{
-      display: "flex", gap: 7, marginBottom: 24,
-      overflowX: "auto", paddingBottom: 4,
-      scrollbarWidth: "none", msOverflowStyle: "none",
-    }}>
-      {allDays.map((d) => {
-        const done = completedDays.includes(d.day);
-        const active = currentDayData.day === d.day;
-        return (
-          <div key={d.day} style={{
-            padding: "8px 16px", borderRadius: 50,
-            fontSize: 12, fontWeight: 700,
-            whiteSpace: "nowrap", flexShrink: 0,
-            background: active ? d.color : done ? `${d.color}18` : "rgba(255,255,255,0.6)",
-            color: active ? "#fff" : done ? d.color : "#bbb",
-            border: `1.5px solid ${active ? d.color : done ? `${d.color}55` : "rgba(0,0,0,0.08)"}`,
-            transition: "all 0.3s ease",
-            display: "flex", alignItems: "center", gap: 5,
-            backdropFilter: "blur(8px)",
-          }}>
-            {done && !active && <span style={{ fontSize: 9 }}>✓</span>}
-            {active && <span>{d.icon}</span>}
-            {d.title}
-          </div>
-        );
-      })}
+/* ─── PROGRESS BAR ───────────────────────────────────────────── */
+const ProgressBar = ({current,total,dayColor}) => (
+  <div style={{marginBottom:20}}>
+    <div style={{display:'flex',justifyContent:'space-between',fontSize:11,fontWeight:800,
+      color:`rgba(26,54,93,0.5)`,letterSpacing:1.5,textTransform:'uppercase',marginBottom:8}}>
+      <span>Question {current} of {total}</span>
+      <span>{Math.round((current/total)*100)}%</span>
     </div>
-  );
-}
-
-function LoadingScreen() {
-  const msgs = ["Gathering your passions…", "Mapping your strengths…", "Weaving your purpose…", "Almost ready…"];
-  const [phase, setPhase] = useState(0);
-  useEffect(() => {
-    const t = setInterval(() => setPhase((p) => (p + 1) % msgs.length), 1900);
-    return () => clearInterval(t);
-  }, []);
-
-  return (
-    <div style={{ textAlign: "center", padding: "clamp(60px,10vw,100px) 20px" }}>
-      <div style={{ position: "relative", width: 90, height: 90, margin: "0 auto 36px" }}>
-        {[0, 1, 2].map((i) => (
-          <div key={i} style={{
-            position: "absolute", inset: i * 11, borderRadius: "50%",
-            border: `2.5px solid ${["#64CDD1", "#5794A4", "#3B82F6"][i]}`,
-            opacity: 0.35 + i * 0.25,
-            animation: `spin ${1.4 + i * 0.45}s linear infinite ${i % 2 ? "reverse" : ""}`,
-          }} />
-        ))}
-        <div style={{
-          position: "absolute", inset: 33, borderRadius: "50%",
-          background: "linear-gradient(135deg,#64CDD1,#3B82F6)",
-          animation: "pulse 1.6s ease-in-out infinite",
-        }} />
-      </div>
-
-      <h3 style={{
-        fontFamily: "'Playfair Display',serif",
-        fontSize: "clamp(20px,3vw,26px)",
-        background: "linear-gradient(135deg,#2c3e50,#5794A4)",
-        WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent",
-        marginBottom: 14,
-      }}>Revealing your Ikigai</h3>
-
-      <p style={{ fontSize: 15, color: "rgba(0,0,0,0.45)", animation: "fadeIn 0.4s ease" }}>
-        {msgs[phase]}
-      </p>
+    <div style={{height:8,borderRadius:99,background:'rgba(255,255,255,0.5)',overflow:'hidden'}}>
+      <motion.div initial={{width:0}} animate={{width:`${(current/total)*100}%`}} transition={{duration:.6}}
+        style={{height:'100%',borderRadius:99,background:`linear-gradient(to right,${dayColor},${C.blue})`}}/>
     </div>
-  );
-}
+  </div>
+);
 
-function Landing() {
-  const { goToRoleSelect } = useIkigai();
+/* ─── QUESTION CARD COMPONENT (WITH BACK BUTTON) ─── */
+const QuestionCard = ({question, dayColor, onAnswer, onBack, questionIndex, totalQuestions, isFirst, savedAnswer}) => {
+  const [selected, setSelected] = useState(savedAnswer !== undefined && typeof savedAnswer !== 'string' && !Array.isArray(savedAnswer) ? savedAnswer : null);
+  const [multiSelected, setMultiSelected] = useState(() => {
+    if (savedAnswer && Array.isArray(savedAnswer)) return savedAnswer.filter(a => a !== 'Other');
+    return [];
+  });
+  const [text, setText] = useState(typeof savedAnswer === 'string' ? savedAnswer : '');
+  const [showOther, setShowOther] = useState(() => {
+    if (savedAnswer && Array.isArray(savedAnswer) && savedAnswer.includes('Other')) return true;
+    return false;
+  });
+  const [otherValue, setOtherValue] = useState(() => {
+    if (savedAnswer && Array.isArray(savedAnswer)) {
+      const other = savedAnswer.find(a => a !== 'Other' && !question.options?.includes(a));
+      return other || '';
+    }
+    return '';
+  });
 
-  const highlights = [
-    { icon: "♡", label: "Passion", color: "#e85d4a" },
-    { icon: "◎", label: "Lifestyle", color: "#f0942a" },
-    { icon: "◈", label: "Skills", color: "#3a9e6e" },
-    { icon: "◆", label: "Career", color: "#5b6af0" },
-    { icon: "✦", label: "Purpose", color: "#9b59b6" },
-    { icon: "◉", label: "Vision", color: "#2196a8" },
-  ];
+  const handleMultiSelect = (opt) => {
+    if (opt === 'Other') {
+      setShowOther(!showOther);
+      return;
+    }
+    if (multiSelected.includes(opt)) {
+      setMultiSelected(multiSelected.filter(x => x !== opt));
+    } else {
+      setMultiSelected([...multiSelected, opt]);
+    }
+  };
 
-  return (
-    <div style={{
-      textAlign: "center",
-      padding: "clamp(40px,8vw,80px) clamp(16px,4vw,32px) clamp(40px,6vw,60px)",
-    }}>
-      <div style={{
-        width: 112, height: 112, borderRadius: "50%",
-        background: "rgba(255,255,255,0.7)",
-        display: "flex", alignItems: "center", justifyContent: "center",
-        fontSize: 50, margin: "0 auto 32px",
-        boxShadow: "0 0 0 18px rgba(100,205,209,0.07), 0 20px 56px rgba(100,205,209,0.18)",
-        animation: "float 4.5s ease-in-out infinite",
-        border: "1.5px solid rgba(100,205,209,0.35)",
-        backdropFilter: "blur(8px)",
-      }}>☯</div>
+  const handleSubmit = () => {
+    if (question.type === 'text' || question.type === 'writing') {
+      if (text.trim()) onAnswer(text);
+    } else if (question.type === 'mcq') {
+      if (selected !== null) onAnswer(selected);
+    } else if (question.type === 'multi') {
+      if (multiSelected.length > 0) {
+        const finalAnswer = showOther && otherValue ? [...multiSelected, otherValue] : multiSelected;
+        onAnswer(finalAnswer);
+      }
+    }
+  };
 
-      <div style={{
-        display: "inline-block", padding: "6px 20px", borderRadius: 50,
-        background: "rgba(100,205,209,0.12)",
-        border: "1.5px solid rgba(100,205,209,0.35)",
-        fontSize: 12, color: "#5794A4", marginBottom: 24,
-        fontWeight: 700, letterSpacing: 0.5,
-        // FIXED: animation-fill-mode: both so it doesn't flicker to opacity:0 after animating in
-        animation: "fadeUp 0.6s ease both",
-      }}>
-        6-Day Self-Discovery Journey
-      </div>
+  const canProceed = () => {
+    if (question.type === 'text' || question.type === 'writing') return text.trim().length > 0;
+    if (question.type === 'mcq') return selected !== null;
+    if (question.type === 'multi') return multiSelected.length > 0 || (showOther && otherValue);
+    return false;
+  };
 
-      <h1 style={{
-        fontFamily: "'Playfair Display', serif",
-        fontSize: "clamp(34px,6vw,58px)",
-        background: "linear-gradient(135deg, #1a1a2e, #64CDD1, #3B82F6)",
-        WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent",
-        marginBottom: 18, lineHeight: 1.15,
-        animation: "fadeUp 0.7s ease 0.05s both",
-      }}>
-        Discover Your<br /><em>Ikigai</em>
-      </h1>
-
-      <p style={{
-        fontSize: "clamp(15px,2.2vw,18px)", color: "#666",
-        lineHeight: 1.8, maxWidth: 500, margin: "0 auto 10px",
-        animation: "fadeUp 0.7s ease 0.1s both",
-      }}>
-        A personalised 6-day journey to discover your true purpose — tailored to your unique role and ambitions.
-      </p>
-      <p style={{
-        fontSize: 13, color: "#aaa", marginBottom: 44,
-        animation: "fadeUp 0.7s ease 0.15s both",
-      }}>
-        Choose your path. Answer honestly. Your results will be uniquely yours.
-      </p>
-
-      {/* FIXED: removed inline opacity:0 — animation handles opacity with fill-mode: both */}
-      <div style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fill, minmax(100px,1fr))",
-        gap: 12, maxWidth: 600, margin: "0 auto 48px",
-        animation: "fadeUp 0.7s ease 0.2s both",
-      }}>
-        {highlights.map((d, i) => (
-          <div key={d.label} style={{
-            padding: "16px 12px", borderRadius: 20, textAlign: "center",
-            background: "rgba(255,255,255,0.78)",
-            backdropFilter: "blur(10px)",
-            border: `1.5px solid ${d.color}28`,
-            transition: "transform 0.2s ease, box-shadow 0.2s ease",
-            // FIXED: fill-mode both, no manual opacity:0
-            animation: `fadeUp 0.6s ease ${0.2 + i * 0.05}s both`,
-          }}
-            onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-5px)"; e.currentTarget.style.boxShadow = `0 10px 28px ${d.color}33`; }}
-            onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "none"; }}
-          >
-            <div style={{ fontSize: 24, marginBottom: 8, color: d.color }}>{d.icon}</div>
-            <div style={{ fontSize: 11, fontWeight: 700, color: d.color, textTransform: "uppercase", letterSpacing: 0.5 }}>
-              Day {i + 1}
-            </div>
-            <div style={{ fontSize: 11, color: "#999", fontWeight: 400, marginTop: 2 }}>{d.label}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* FIXED: fill-mode both */}
-      <div style={{
-        display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap",
-        marginBottom: 40, animation: "fadeUp 0.7s ease 0.3s both",
-      }}>
-        {[
-          { label: "🌍 Entrepreneur", color: "#e85d4a", bg: "#fff5f3" },
-          { label: "📊 Managerial", color: "#5b6af0", bg: "#f3f4ff" },
-          { label: "🔧 Technician", color: "#3a9e6e", bg: "#f0fbf5" },
-        ].map((r) => (
-          <span key={r.label} style={{
-            padding: "8px 20px", borderRadius: 50, fontSize: 13,
-            background: r.bg, color: r.color,
-            border: `1.5px solid ${r.color}33`,
-            fontWeight: 600,
-          }}>{r.label}</span>
-        ))}
-      </div>
-
-      <button
-        onClick={goToRoleSelect}
-        style={{
-          display: "inline-flex", alignItems: "center", gap: 12,
-          padding: "18px 52px", borderRadius: 50,
-          fontSize: 17, fontWeight: 700, border: "none",
-          background: "linear-gradient(135deg, #64CDD1, #3B82F6)",
-          color: "#fff", cursor: "pointer",
-          fontFamily: "'DM Sans', sans-serif",
-          boxShadow: "0 10px 40px rgba(100,205,209,0.42)",
-          animation: "fadeUp 0.7s ease 0.35s both",
-          transition: "all 0.25s ease",
-        }}
-        onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "0 16px 50px rgba(100,205,209,0.55)"; }}
-        onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 10px 40px rgba(100,205,209,0.42)"; }}
-      >
-        Choose Your Path <span style={{ fontSize: 22 }}>→</span>
-      </button>
-
-      <p style={{ fontSize: 12, color: "#bbb", marginTop: 16 }}>Takes about 10–15 minutes · 3 roles to choose from</p>
-    </div>
-  );
-}
-
-function Navbar() {
-  const { screen, currentDayData, completedDays, allDays, roleMeta } = useIkigai();
-  if (screen === "landing") return null;
+  const getOptions = () => {
+    if (question.options) return question.options;
+    if (question.suggestions) return question.suggestions;
+    return [];
+  };
 
   return (
-    <div style={{
-      background: "rgba(255,255,255,0.85)",
-      backdropFilter: "blur(14px)",
-      borderBottom: "1px solid rgba(100,205,209,0.18)",
-      padding: "0 clamp(16px,3vw,32px)",
-      height: 60,
-      display: "flex", alignItems: "center", justifyContent: "space-between",
-      position: "sticky", top: 0, zIndex: 100,
-    }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <span style={{ fontSize: 22 }}>☯</span>
-        <span style={{
-          fontFamily: "'Playfair Display', serif",
-          fontSize: 17, fontWeight: 600,
-          background: "linear-gradient(90deg, #5794A4, #64CDD1)",
-          WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent",
-        }}>Ikigai Journey</span>
-        {roleMeta.label && screen !== "roleSelect" && (
-          <span style={{
-            padding: "3px 10px", borderRadius: 50, fontSize: 11,
-            background: roleMeta.bg || "rgba(100,205,209,0.1)",
-            color: roleMeta.color || "#5794A4",
-            border: `1px solid ${roleMeta.accent || "rgba(100,205,209,0.2)"}`,
-            fontWeight: 700,
-          }}>
-            {roleMeta.icon} {roleMeta.label}
+    <Glass style={{borderRadius:24,padding:'28px 24px',animation:'fadeUp .5s ease both'}}>
+      <div style={{marginBottom:18, display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:8}}>
+        <span style={{fontSize:10,fontWeight:800,letterSpacing:2,textTransform:'uppercase',color:dayColor}}>
+          Question {questionIndex} of {totalQuestions}
+        </span>
+        {question.instruction && (
+          <span style={{fontSize:10,fontWeight:600,color:dayColor,background:`${dayColor}10`,padding:'4px 10px',borderRadius:20}}>
+            {question.instruction}
           </span>
         )}
       </div>
+      
+      <h3 style={{fontFamily:'Sora,sans-serif',fontSize:'clamp(17px,3vw,22px)',fontWeight:800,
+        color:C.darkNavy,marginBottom:20,lineHeight:1.3}}>{question.question}</h3>
 
-      {screen === "journey" && (
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          {allDays.map((d) => {
-            const done = completedDays.includes(d.day);
-            const active = currentDayData.day === d.day;
-            return (
-              <div key={d.day} style={{
-                width: active ? 28 : 8, height: 8, borderRadius: 50,
-                background: done ? d.color : active ? d.color : "rgba(0,0,0,0.1)",
-                opacity: done && !active ? 0.5 : 1,
-                transition: "all 0.35s cubic-bezier(.22,.68,0,1.2)",
-                boxShadow: active ? `0 0 0 3px ${d.color}33` : "none",
-              }} />
-            );
-          })}
+      {/* Writing / Text Question */}
+      {(question.type === 'text' || question.type === 'writing') && (
+        <>
+          {question.suggestions && question.suggestions.length > 0 && (
+            <div style={{marginBottom:16}}>
+              <p style={{fontSize:11,color:`rgba(26,54,93,0.5)`,marginBottom:8}}>Suggestions (click to add):</p>
+              <div style={{display:'flex',flexWrap:'wrap',gap:8}}>
+                {question.suggestions.map(suggestion => (
+                  <span
+                    key={suggestion}
+                    onClick={() => setText(prev => prev ? `${prev}, ${suggestion}` : suggestion)}
+                    style={{
+                      padding:'4px 12px', borderRadius:20, fontSize:11,
+                      background:`${dayColor}10`, color:dayColor,
+                      border:`1px solid ${dayColor}30`, cursor:'pointer',
+                      transition:'all 0.2s ease'
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05)'}
+                    onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+                  >
+                    {suggestion}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+          <textarea 
+            value={text} 
+            onChange={e => setText(e.target.value)}
+            rows={4} 
+            placeholder="Share your thoughts…"
+            style={{
+              width:'100%', padding:'14px 16px', borderRadius:14, resize:'vertical',
+              border:`1.5px solid ${canProceed() ? dayColor : 'rgba(74,144,226,0.25)'}`,
+              background:G.glass65, fontFamily:'Manrope,sans-serif', fontSize:14,
+              color:C.darkNavy, outline:'none',
+              boxShadow:`0 2px 12px rgba(74,144,226,0.08)`,
+              transition:'border-color 0.2s ease'
+            }}
+          />
+        </>
+      )}
+
+      {/* MCQ Question */}
+      {question.type === 'mcq' && (
+        <div style={{display:'flex',flexDirection:'column',gap:10}}>
+          {getOptions().map((opt, i) => (
+            <button 
+              key={opt} 
+              onClick={() => setSelected(opt)}
+              style={{
+                padding:'14px 18px', borderRadius:14, textAlign:'left', border:'none', cursor:'pointer',
+                background:selected === opt ? `linear-gradient(135deg,${dayColor}18,rgba(255,255,255,0.9))` : G.glass65,
+                outline:selected === opt ? `2px solid ${dayColor}` : `1.5px solid ${G.border60}`,
+                fontSize:14, color:C.darkNavy, fontFamily:'Manrope,sans-serif', fontWeight:500,
+                transition:'all .25s ease', boxShadow:selected === opt ? `0 4px 20px ${dayColor}20` : 'none'
+              }}
+            >
+              <span style={{
+                display:'inline-block', width:24, height:24, borderRadius:'50%',
+                background:selected === opt ? dayColor : 'rgba(0,0,0,0.06)',
+                color:selected === opt ? '#fff' : `rgba(26,54,93,0.4)`,
+                fontSize:11, fontWeight:800, marginRight:12, textAlign:'center', lineHeight:'24px', verticalAlign:'middle'
+              }}>{String.fromCharCode(65 + i)}</span>
+              {opt}
+            </button>
+          ))}
         </div>
       )}
 
-      {screen === "result" && (
-        <span style={{
-          fontSize: 11, fontWeight: 700, color: "#64CDD1",
-          textTransform: "uppercase", letterSpacing: 1.5,
-        }}>Your Results</span>
+      {/* Multi-Select Question */}
+      {question.type === 'multi' && (
+        <>
+          <div style={{display:'flex',flexDirection:'column',gap:10}}>
+            {getOptions().map(opt => {
+              if (opt === 'Other') {
+                return (
+                  <div key={opt}>
+                    <button 
+                      onClick={() => setShowOther(!showOther)}
+                      style={{
+                        padding:'14px 18px', borderRadius:14, textAlign:'left', border:'none', cursor:'pointer',
+                        background:showOther ? `linear-gradient(135deg,${dayColor}18,rgba(255,255,255,0.9))` : G.glass65,
+                        outline:showOther ? `2px solid ${dayColor}` : `1.5px solid ${G.border60}`,
+                        fontSize:14, color:C.darkNavy, fontFamily:'Manrope,sans-serif', fontWeight:500,
+                        transition:'all .25s ease', width:'100%'
+                      }}
+                    >
+                      <span style={{
+                        display:'inline-block', width:20, height:20, borderRadius:4,
+                        background:showOther ? dayColor : 'rgba(0,0,0,0.06)',
+                        color:showOther ? '#fff' : `rgba(26,54,93,0.4)`,
+                        fontSize:12, fontWeight:800, marginRight:12, textAlign:'center', lineHeight:'20px'
+                      }}>{showOther ? '✓' : '+'}</span>
+                      {opt}
+                    </button>
+                    {showOther && (
+                      <input
+                        type="text"
+                        placeholder="Please specify..."
+                        value={otherValue}
+                        onChange={e => setOtherValue(e.target.value)}
+                        style={{
+                          marginTop:10, width:'100%', padding:'12px 16px', borderRadius:12,
+                          border:`1.5px solid ${dayColor}`, background:G.glass65,
+                          fontSize:14, outline:'none'
+                        }}
+                      />
+                    )}
+                  </div>
+                );
+              }
+              const isSelected = multiSelected.includes(opt);
+              return (
+                <button 
+                  key={opt} 
+                  onClick={() => handleMultiSelect(opt)}
+                  style={{
+                    padding:'14px 18px', borderRadius:14, textAlign:'left', border:'none', cursor:'pointer',
+                    background:isSelected ? `linear-gradient(135deg,${dayColor}18,rgba(255,255,255,0.9))` : G.glass65,
+                    outline:isSelected ? `2px solid ${dayColor}` : `1.5px solid ${G.border60}`,
+                    fontSize:14, color:C.darkNavy, fontFamily:'Manrope,sans-serif', fontWeight:isSelected ? 600 : 500,
+                    transition:'all .25s ease'
+                  }}
+                >
+                  <span style={{
+                    display:'inline-block', width:20, height:20, borderRadius:4,
+                    background:isSelected ? dayColor : 'rgba(0,0,0,0.06)',
+                    color:isSelected ? '#fff' : `rgba(26,54,93,0.4)`,
+                    fontSize:12, fontWeight:800, marginRight:12, textAlign:'center', lineHeight:'20px'
+                  }}>{isSelected ? '✓' : '□'}</span>
+                  {opt}
+                </button>
+              );
+            })}
+          </div>
+          {multiSelected.length > 0 && (
+            <p style={{fontSize:11, color:dayColor, marginTop:12, textAlign:'center'}}>
+              Selected: {multiSelected.join(', ')}{showOther && otherValue ? `, ${otherValue}` : ''}
+            </p>
+          )}
+        </>
       )}
-    </div>
+
+      <div style={{display:'flex', justifyContent:'space-between', marginTop:24}}>
+        {!isFirst && (
+          <button 
+            className="btn-primary" 
+            onClick={onBack}
+            style={{
+              display:'flex', alignItems:'center', gap:8, padding:'12px 28px', borderRadius:12, border:'none',
+              background:G.glass65, color:C.darkNavy, cursor:'pointer',
+              fontFamily:'Sora,sans-serif', fontWeight:700, fontSize:14,
+              transition:'all 0.2s ease'
+            }}
+          >
+            ← Back
+          </button>
+        )}
+        <button 
+          className="btn-primary" 
+          onClick={handleSubmit}
+          disabled={!canProceed()}
+          style={{
+            display:'flex', alignItems:'center', gap:8, padding:'12px 28px', borderRadius:12, border:'none',
+            background:canProceed() ? `linear-gradient(135deg,${dayColor},${dayColor}cc)` : 'rgba(0,0,0,0.1)',
+            color:canProceed() ? '#fff' : 'rgba(0,0,0,0.3)',
+            cursor:canProceed() ? 'pointer' : 'not-allowed',
+            fontFamily:'Sora,sans-serif', fontWeight:800, fontSize:14,
+            boxShadow:canProceed() ? `0 6px 20px ${dayColor}40` : 'none',
+            transition:'all 0.2s ease',
+            marginLeft: isFirst ? 'auto' : 0
+          }}
+        >
+          {questionIndex === totalQuestions ? 'Complete Day' : 'Next →'}
+        </button>
+      </div>
+    </Glass>
   );
-}
+};
+
+/* ─── DAY CELEBRATION MODAL ──────────────────────────────────── */
+const DayCelebration = ({day,allDays,completedDays,onContinue}) => {
+  const isLast=day===allDays.length;
+  const dayData=allDays[day-1];
+  const nextDay=allDays[day]||null;
+  const msgs=[
+    {headline:'Day 1 Complete!',sub:"You've uncovered what you love. Your passion is your compass."},
+    {headline:'Day 2 Complete!',sub:"You've designed your ideal life. Vision shapes reality."},
+    {headline:'Day 3 Complete!',sub:"Your strengths are crystal clear. You know what makes you powerful."},
+    {headline:'Day 4 Complete!',sub:"Career clarity achieved. You know how you want to grow and earn."},
+    {headline:'Day 5 Complete!',sub:"Your purpose is defined. You know the impact you want to leave."},
+    {headline:'Journey Complete!',sub:"All 6 days done. Your Ikigai is ready to be revealed!"},
+  ];
+  const msg=msgs[(day-1)%msgs.length];
+  return (
+    <>
+      <Confetti count={isLast?100:60}/>
+      <div style={{position:'fixed',inset:0,background:'rgba(10,20,50,0.6)',backdropFilter:'blur(8px)',
+        zIndex:150,display:'flex',alignItems:'center',justifyContent:'center',padding:20}}>
+        <Glass style={{borderRadius:28,padding:'clamp(28px,4vw,48px)',textAlign:'center',
+          maxWidth:440,width:'100%',boxShadow:'0 24px 80px rgba(0,0,0,0.25)',
+          animation:'celebSlide .6s cubic-bezier(.22,.68,0,1.2) both',position:'relative',overflow:'hidden'}}>
+          <div style={{position:'absolute',top:0,left:0,right:0,height:5,
+            background:`linear-gradient(90deg,${dayData.color},${dayData.color}88)`}}/>
+          <div style={{display:'flex',justifyContent:'center',gap:8,marginBottom:20,marginTop:8}}>
+            {Array.from({length:isLast?6:3}).map((_,i)=>(
+              <div key={i} style={{fontSize:isLast?26:22,animation:`starPop .5s cubic-bezier(.22,.68,0,1.8) ${i*.1}s both`}}>
+                {isLast?'🌟':'⭐'}
+              </div>
+            ))}
+          </div>
+          <div style={{display:'inline-flex',alignItems:'center',gap:6,
+            background:`${dayData.color}12`,border:`1px solid ${dayData.color}30`,
+            borderRadius:99,padding:'5px 16px',marginBottom:14}}>
+            <span style={{fontSize:13}}>{dayData.icon}</span>
+            <span style={{fontSize:11,fontWeight:800,color:dayData.color,letterSpacing:1,textTransform:'uppercase'}}>
+              Day {day} — {dayData.title}
+            </span>
+          </div>
+          <h2 style={{fontFamily:'Playfair Display,serif',fontSize:'clamp(20px,4vw,28px)',
+            color:C.darkNavy,marginBottom:10,lineHeight:1.25}}>{msg.headline}</h2>
+          <p style={{fontSize:'clamp(13px,2vw,15px)',color:`rgba(26,54,93,0.6)`,lineHeight:1.7,
+            marginBottom:22,maxWidth:300,margin:'0 auto 22px'}}>{msg.sub}</p>
+          <div style={{display:'flex',flexWrap:'wrap',gap:6,justifyContent:'center',marginBottom:24}}>
+            {allDays.slice(0,day).map(d=>(
+              <span key={d.day} style={{padding:'4px 11px',borderRadius:99,fontSize:11,
+                background:`${d.color}12`,color:d.color,border:`1.5px solid ${d.color}44`,fontWeight:600,
+                display:'inline-flex',alignItems:'center',gap:4}}>
+                <span style={{fontSize:9}}>✓</span>{d.title}
+              </span>
+            ))}
+          </div>
+          <button className="btn-primary" onClick={onContinue}
+            style={{display:'inline-flex',alignItems:'center',gap:10,padding:'14px 28px',
+              borderRadius:99,border:'none',width:'100%',justifyContent:'center',cursor:'pointer',
+              background:isLast
+                ? `linear-gradient(135deg,rgb(232,93,74),rgb(240,148,42))`
+                : `linear-gradient(135deg,${nextDay?.color||dayData.color},${nextDay?.color||dayData.color}cc)`,
+              color:'#fff',fontFamily:'Sora,sans-serif',fontWeight:800,fontSize:15,
+              boxShadow:`0 8px 28px ${(nextDay?.color||dayData.color)}44`}}>
+            {isLast ? 'Reveal My Ikigai 🌸' : `Continue to Day ${day+1}: ${nextDay?.title} →`}
+          </button>
+        </Glass>
+      </div>
+    </>
+  );
+};
+
+// Day configuration
+const allDays = [
+  {day:1,icon:'❤️',title:'Passion',   subtitle:'Discover what sets your soul on fire',description:'Explore the activities, topics, and experiences that make you feel most alive.',color:C.lightBlue,bg:'rgba(74,144,226,0.08)'},
+  {day:2,icon:'🌟',title:'Lifestyle', subtitle:'Design your ideal future life',         description:'Visualize the life you truly want to be living 5 years from now.',            color:C.blue,bg:'rgba(43,108,176,0.08)'},
+  {day:3,icon:'⚡',title:'Strengths', subtitle:'Uncover your unique superpowers',       description:'Identify the skills and talents that come naturally and powerfully to you.',  color:C.darkNavy,bg:'rgba(26,54,93,0.07)'},
+  {day:4,icon:'💼',title:'Career',    subtitle:'Define your professional trajectory',   description:'Clarify how you want to grow, earn, and contribute professionally.',          color:C.lightBlue,bg:'rgba(74,144,226,0.08)'},
+  {day:5,icon:'🎯',title:'Purpose',   subtitle:'Discover your deeper why',              description:'Connect with the impact you want to have on the world around you.',           color:C.blue,bg:'rgba(43,108,176,0.08)'},
+  {day:6,icon:'🗺️',title:'Vision',   subtitle:'Map your path forward',                 description:'Synthesize everything into a clear, actionable vision for your future.',       color:C.darkNavy,bg:'rgba(26,54,93,0.07)'},
+];
 
 export default function SevenDays() {
-  const { screen, questionIndex, currentDayData } = useIkigai();
-  const [isMobile, setIsMobile] = useState(() =>
-    typeof window !== "undefined" ? window.innerWidth < 900 : true
-  );
+  const [screen,setScreen]               = useState('landing');
+  const [role,setRole]                   = useState(null);
+  const [currentDay,setCurrentDay]       = useState(1);
+  const [completedDays,setCompletedDays] = useState([]);
+  const [questionIdx,setQuestionIdx]     = useState(-1);
+  const [showCelebration,setShowCelebration] = useState(false);
+  const [answers, setAnswers]             = useState({});
+  const [isMobile,setIsMobile]           = useState(()=>typeof window!=='undefined'?window.innerWidth<768:false);
 
-  useEffect(() => {
-    const h = () => setIsMobile(window.innerWidth < 900);
-    window.addEventListener("resize", h);
-    return () => window.removeEventListener("resize", h);
-  }, []);
+  useEffect(()=>{
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  },[]);
 
-  const isResult = screen === "result";
-  const maxW = isResult ? 900 : 720;
+  const roleMeta = role ? {
+    entrepreneur:{label:'Entrepreneur',icon:'🌍',color:C.lightBlue,bg:'rgba(74,144,226,0.08)',accent:'rgba(74,144,226,0.2)'},
+    managerial:  {label:'Managerial',  icon:'📊',color:C.blue,     bg:'rgba(43,108,176,0.08)',accent:'rgba(43,108,176,0.2)'},
+    technician:  {label:'Technician',  icon:'🔧',color:C.darkNavy, bg:'rgba(26,54,93,0.07)',  accent:'rgba(26,54,93,0.15)'},
+  }[role] : {};
+
+  // Get the current day's questions from the imported questionsData
+  const currentDayDataRaw = role ? questionsData[role]?.[currentDay - 1] : null;
+  
+  const currentDayData = {
+    ...allDays[currentDay - 1],
+    questions: currentDayDataRaw?.questions || []
+  };
+  
+  const questionsList = currentDayData.questions || [];
+  const totalQ = questionsList.length;
+  const currentQuestion = questionsList[questionIdx];
+
+  const handleAnswer = (answer) => {
+    if (currentQuestion) {
+      setAnswers(prev => ({
+        ...prev,
+        [currentQuestion.id]: answer
+      }));
+    }
+    
+    if (questionIdx < totalQ - 1) {
+      setQuestionIdx(q => q + 1);
+    } else {
+      setCompletedDays(p => [...new Set([...p, currentDay])]);
+      setShowCelebration(true);
+    }
+  };
+
+  const handleBack = () => {
+    if (questionIdx > 0) {
+      setQuestionIdx(q => q - 1);
+    }
+  };
+
+  const afterCelebration = () => {
+    setShowCelebration(false);
+    if (currentDay < 6) { 
+      setCurrentDay(d => d + 1); 
+      setQuestionIdx(-1); 
+    } else { 
+      setScreen('loading'); 
+      setTimeout(() => setScreen('result'), 2800); 
+    }
+  };
+
+  const maxW = screen === 'result' ? 960 : screen === 'journey' ? (isMobile ? '100%' : 880) : (isMobile ? '100%' : 720);
 
   return (
-    <div style={{
-      minHeight: "100vh",
-      background: "linear-gradient(150deg, #E8F5F6 0%, #D4EFF3 30%, #EEF9FA 60%, #E0F0F2 100%)",
-      fontFamily: "'DM Sans', sans-serif",
-      position: "relative", overflowX: "hidden",
-    }}>
-      <StyleInjector />
-      <FloatingParticles />
+    <div style={{minHeight:'100vh',background:G.bg,fontFamily:'Manrope,sans-serif',position:'relative',overflowX:'hidden'}}>
+      <GlobalStyles/>
+      <BlobBg/>
+      <FloatingParticles/>
 
-      <div style={{
-        position: "fixed", top: "5%", left: "-8%",
-        width: "55%", height: "55%", borderRadius: "50%",
-        background: "radial-gradient(circle, rgba(100,205,209,0.18) 0%, transparent 70%)",
-        filter: "blur(60px)", pointerEvents: "none", zIndex: 0,
-        animation: "floatSlow 22s ease-in-out infinite",
-      }} />
-      <div style={{
-        position: "fixed", bottom: "0%", right: "-8%",
-        width: "48%", height: "48%", borderRadius: "50%",
-        background: "radial-gradient(circle, rgba(87,148,164,0.12) 0%, transparent 70%)",
-        filter: "blur(60px)", pointerEvents: "none", zIndex: 0,
-        animation: "floatSlow 28s ease-in-out infinite reverse",
-      }} />
+      <div style={{position:'fixed',top:'4%',left:'-8%',width:'50%',height:'50%',borderRadius:'50%',
+        background:`radial-gradient(circle,rgba(74,144,226,0.22) 0%,transparent 70%)`,
+        filter:'blur(70px)',pointerEvents:'none',zIndex:0,animation:'floatSlow 22s ease-in-out infinite'}}/>
+      <div style={{position:'fixed',bottom:'-4%',right:'-8%',width:'44%',height:'44%',borderRadius:'50%',
+        background:`radial-gradient(circle,rgba(43,108,176,0.18) 0%,transparent 70%)`,
+        filter:'blur(70px)',pointerEvents:'none',zIndex:0,animation:'floatSlow 28s ease-in-out infinite reverse'}}/>
 
-      <Navbar />
+      <Navbar screen={screen} completedDays={completedDays} allDays={allDays}
+        currentDay={currentDay} roleMeta={roleMeta} isMobile={isMobile}/>
 
-      {screen === "dayComplete" && <DayCelebration />}
+      {showCelebration && (
+        <DayCelebration day={currentDay} allDays={allDays}
+          completedDays={completedDays} onContinue={afterCelebration}/>
+      )}
 
-      <div style={{
-        maxWidth: maxW,
-        margin: "0 auto", width: "100%",
-        padding: (screen === "landing" || screen === "roleSelect")
-          ? "0 clamp(16px,4vw,32px)"
-          : "clamp(20px,3vw,36px) clamp(16px,3vw,32px) 80px",
-        display: "flex", gap: 28,
-        position: "relative", zIndex: 1,
-        boxSizing: "border-box",
-      }}>
-        {!isMobile && screen === "journey" && <Sidebar />}
-
-        <div style={{ flex: 1, minWidth: 0 }}>
-          {screen === "landing" && <Landing />}
-          {screen === "roleSelect" && <RoleSelect />}
-
-          {screen === "journey" && (
-            <>
-              <ProgressBar />
-              <DayTabs />
-              {questionIndex === -1
-                ? <DayIntro />
-                : <QuestionCard key={`${currentDayData.day}-${questionIndex}`} />
-              }
-            </>
+      {/* Responsive margin: no left margin on mobile, 280px on desktop */}
+      <div style={{ marginLeft: isMobile ? 0 : '280px' }}>
+        <div style={{
+          maxWidth:maxW,margin:'0 auto',width:'100%',
+          padding: (screen==='landing'||screen==='roleSelect')
+            ? (isMobile ? '0 16px' : '0 clamp(16px,4vw,32px)')
+            : (isMobile ? '16px 16px 40px' : 'clamp(14px,2vw,24px) clamp(16px,3vw,28px) 60px'),
+          display:'flex',gap:isMobile?0:20,position:'relative',zIndex:1,
+        }}>
+          {!isMobile && screen==='journey' && (
+            <Sidebar allDays={allDays} currentDay={currentDay}
+              completedDays={completedDays} roleMeta={roleMeta}/>
           )}
 
-          {screen === "loading" && <LoadingScreen />}
-          {screen === "result" && <IkigaiChart />}
+          <div style={{flex:1,minWidth:0}}>
+            {screen==='landing'  && <Landing onStart={()=>setScreen('roleSelect')}/>}
+            {screen==='roleSelect' && <RoleSelect onSelect={(r)=>{setRole(r);setScreen('journey');}}/>}
+
+            {screen==='journey' && (
+              <>
+                {/* Mobile day indicator */}
+                {isMobile && (
+                  <div style={{marginBottom:16, textAlign:'center'}}>
+                    <span style={{
+                      padding:'6px 16px', borderRadius:99, fontSize:12, fontWeight:700,
+                      background:currentDayData.color, color:'#fff',
+                      boxShadow:`0 2px 12px ${currentDayData.color}40`
+                    }}>
+                      Day {currentDay}: {currentDayData.title}
+                    </span>
+                    <div style={{display:'flex',gap:6,justifyContent:'center',marginTop:12}}>
+                      {allDays.map(d=>{
+                        const done=completedDays.includes(d.day);
+                        const active=currentDay===d.day;
+                        return (
+                          <div key={d.day} style={{
+                            width:active?24:6,height:6,borderRadius:99,
+                            background:done?d.color:active?d.color:'rgba(0,0,0,0.1)',
+                            transition:'all .35s ease',
+                          }}/>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {!isMobile && (
+                  <div style={{display:'flex',gap:7,marginBottom:18,overflowX:'auto',paddingBottom:4}}>
+                    {allDays.map(d=>{
+                      const done=completedDays.includes(d.day);
+                      const active=currentDay===d.day;
+                      return (
+                        <div key={d.day} style={{
+                          padding:'7px 14px',borderRadius:99,fontSize:11.5,fontWeight:700,
+                          whiteSpace:'nowrap',flexShrink:0,
+                          background:active?d.color:done?`${d.color}18`:G.glass65,
+                          color:active?'#fff':done?d.color:`rgba(26,54,93,0.4)`,
+                          border:`1.5px solid ${active?d.color:done?`${d.color}55`:G.border60}`,
+                          backdropFilter:'blur(8px)',
+                          display:'flex',alignItems:'center',gap:4,transition:'all .3s ease',
+                        }}>
+                          {done&&!active&&<span style={{fontSize:9}}>✓</span>}
+                          {active&&<span>{d.icon}</span>}
+                          {d.title}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {questionIdx >= 0 && totalQ > 0 && (
+                  <ProgressBar current={questionIdx + 1} total={totalQ} dayColor={currentDayData.color}/>
+                )}
+
+                {questionIdx === -1
+                  ? <DayIntro dayData={currentDayData} onStart={() => setQuestionIdx(0)} isMobile={isMobile}/>
+                  : currentQuestion && (
+                      <QuestionCard 
+                        question={currentQuestion}
+                        dayColor={currentDayData.color}
+                        onAnswer={handleAnswer}
+                        onBack={handleBack}
+                        questionIndex={questionIdx + 1}
+                        totalQuestions={totalQ}
+                        isFirst={questionIdx === 0}
+                        savedAnswer={answers[currentQuestion.id]}
+                      />
+                    )
+                }
+                
+                {totalQ === 0 && questionIdx === -1 && (
+                  <div style={{textAlign:'center', padding:'40px'}}>
+                    <p>Loading questions...</p>
+                  </div>
+                )}
+              </>
+            )}
+
+            {screen==='loading' && <LoadingScreen/>}
+
+            {screen==='result' && (
+              <div style={{textAlign:'center', padding:'40px'}}>
+                <h2>Your Ikigai Results</h2>
+                <p>Based on your {role} journey, here are your insights...</p>
+                <pre style={{textAlign:'left', background:'rgba(0,0,0,0.05)', padding:20, borderRadius:12, overflow:'auto', fontSize:12}}>
+                  {JSON.stringify(answers, null, 2)}
+                </pre>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

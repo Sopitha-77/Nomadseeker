@@ -133,218 +133,240 @@ const Navbar = ({ user: propUser, onLogout }) => {
       {/* Mobile Menu Button */}
       <button
         onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-        className="fixed top-4 right-4 z-50 md:hidden bg-white/90 backdrop-blur-md p-2 rounded-xl shadow-lg"
+        className="fixed top-4 right-4 z-50 md:hidden bg-[#8BB8D0]/90 backdrop-blur-md p-2 rounded-xl shadow-lg border border-[#0A3948]/30"
       >
-        {isMobileMenuOpen ? <X size={24} className="text-tiber" /> : <Menu size={24} className="text-tiber" />}
+        {isMobileMenuOpen ? <X size={24} className="text-[#0A3948]" /> : <Menu size={24} className="text-[#0A3948]" />}
       </button>
 
-      {/* Sidebar Navigation */}
-      <nav className={`fixed top-0 left-0 w-[280px] h-screen bg-white/95 backdrop-blur-md border-r border-[#5794A4]/20 z-40 shadow-xl flex flex-col gap-6 p-6 transition-transform duration-300 ${
-        isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
-      }`}>
+      {/* Sidebar Navigation - Darker light blue gradient background */}
+      <nav className={`fixed top-0 left-0 w-[280px] h-screen 
+        overflow-hidden
+        z-40 shadow-2xl
+        flex flex-col gap-6 p-6 
+        transition-transform duration-300 
+        ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
         
-        {/* Logo Section */}
-        <div className="flex items-center gap-3 cursor-pointer hover:scale-105 transition-transform group" onClick={() => handleNavigation('/')}>
-          <div className="relative">
-            <img 
-              src={logo} 
-              alt="NomadSeeker Logo" 
-              className="w-10 h-10 object-contain rounded-lg"
-              onError={(e) => {
-                e.target.onerror = null;
-                e.target.style.display = 'none';
-                const parent = e.target.parentElement;
-                if (parent && !parent.querySelector('.fallback-svg')) {
-                  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-                  svg.setAttribute('width', '32');
-                  svg.setAttribute('height', '32');
-                  svg.setAttribute('viewBox', '0 0 24 24');
-                  svg.setAttribute('fill', 'none');
-                  svg.setAttribute('stroke', '#0A3948');
-                  svg.setAttribute('stroke-width', '2');
-                  svg.classList.add('fallback-svg');
-                  const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-                  circle.setAttribute('cx', '12');
-                  circle.setAttribute('cy', '12');
-                  circle.setAttribute('r', '10');
-                  const polygon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
-                  polygon.setAttribute('points', '16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76');
-                  svg.appendChild(circle);
-                  svg.appendChild(polygon);
-                  parent.appendChild(svg);
-                }
-              }}
-            />
-            <div className="absolute inset-0 bg-gradient-to-r from-[#0A3948]/20 to-[#5794A4]/20 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity" />
-          </div>
-          <span className="text-xl font-bold bg-gradient-to-r from-[#0A3948] to-[#5794A4] bg-clip-text text-transparent">NomadSeeker</span>
-        </div>
+        {/* Darker light blue gradient background */}
+        <div className="absolute inset-0 bg-gradient-to-r from-[#A8CDE0]/80 via-[#8BB8D0]/70 to-[#A8CDE0]/80"></div>
+        
+        {/* Subtle grid pattern */}
+        <svg className="absolute inset-0 w-full h-full opacity-[0.04]" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <pattern id="story-grid" width="40" height="40" patternUnits="userSpaceOnUse">
+              <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#0A3948" strokeWidth="1"/>
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill="url(#story-grid)" />
+        </svg>
 
-        {/* Navigation Items */}
-        <div className="flex flex-col gap-2 flex-1 overflow-y-auto custom-scrollbar">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const active = isActive(item.path);
-            return (
-              <button
-                key={item.id}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 ${
-                  active 
-                    ? 'bg-gradient-to-r from-[#5794A4]/20 to-[#64CDD1]/10 text-[#0A3948] border-l-2 border-[#0A3948]' 
-                    : 'text-[#5794A4] hover:bg-[#5794A4]/10 hover:translate-x-1'
-                }`}
-                onClick={() => handleNavigation(item.path)}
-              >
-                <Icon size={20} />
-                <span className="font-medium">{item.label}</span>
-              </button>
-            );
-          })}
+        {/* Content wrapper with higher z-index */}
+        <div className="relative z-10 flex flex-col gap-6 h-full">
 
-          {/* Ikigai Chart Dropdown */}
-          <div className="relative">
-            <button 
-              className={`flex items-center justify-between w-full px-4 py-3 rounded-xl transition-all duration-300 ${
-                isIkigaiOpen 
-                  ? 'bg-gradient-to-r from-[#5794A4]/20 to-[#64CDD1]/10 text-[#0A3948]' 
-                  : 'text-[#5794A4] hover:bg-[#5794A4]/10 hover:translate-x-1'
-              }`}
-              onClick={() => setIsIkigaiOpen(!isIkigaiOpen)}
-            >
-              <div className="flex items-center gap-3">
-                <Compass size={20} />
-                <span className="font-medium">Ikigai Journey</span>
-              </div>
-              <ChevronDown size={16} className={`transition-transform duration-300 ${isIkigaiOpen ? 'rotate-180' : ''}`} />
-            </button>
-            
-            {isIkigaiOpen && (
-              <div className="mt-2 ml-6 space-y-1 animate-slide-right">
-                {ikigaiItems.map((item) => {
-                  const Icon = item.icon;
-                  const active = isActive(item.path);
-                  const isLocked = item.locked;
-                  const isAnimating = showLockAnimation && lockedItem === item.id;
-                  
-                  return (
-                    <button
-                      key={item.id}
-                      className={`flex items-center justify-between w-full px-4 py-2 rounded-lg transition-all duration-300 group ${
-                        active && !isLocked
-                          ? 'bg-gradient-to-r from-[#64CDD1]/20 to-[#5794A4]/10 text-[#0A3948]' 
-                          : isLocked
-                            ? 'text-[#5794A4]/70 cursor-not-allowed hover:bg-transparent'
-                            : 'text-[#5794A4] hover:bg-[#64CDD1]/10 hover:translate-x-1'
-                      }`}
-                      onClick={(e) => {
-                        if (!isLocked) {
-                          handleNavigation(item.path);
-                        }
-                      }}
-                      onMouseEnter={(e) => isLocked && handleLockClick(e, item.id, item.label)}
-                    >
-                      <div className="flex items-center gap-3">
-                        <Icon size={18} />
-                        <div className="text-left">
-                          <span className="text-sm block">{item.label}</span>
-                          <span className="text-[10px] text-gray-400">{item.description}</span>
-                        </div>
-                      </div>
-                      {isLocked && (
-                        <div className="relative">
-                          <Lock 
-                            size={14} 
-                            className={`transition-all duration-300 ${
-                              isAnimating 
-                                ? 'animate-shake scale-110' 
-                                : 'group-hover:scale-110'
-                            }`}
-                            style={{
-                              color: '#FFD700',
-                              filter: 'drop-shadow(0 0 2px rgba(255,215,0,0.5))'
-                            }}
-                          />
-                          <div className="absolute inset-0 animate-ping-slow opacity-0 group-hover:opacity-100 pointer-events-none">
-                            <Lock size={14} style={{ color: '#FFD700', filter: 'blur(2px)' }} />
-                          </div>
-                        </div>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-
-          {/* Completion Status Indicator */}
-          {!isUnlocked && (
-            <div className="mt-4 p-3 bg-gradient-to-r from-[#64CDD1]/10 to-[#5794A4]/10 rounded-xl border border-[#64CDD1]/30">
-              <div className="flex items-center gap-2">
-                <Target size={14} className="text-[#64CDD1]" />
-                <span className="text-[10px] font-medium text-[#0A3948]">Complete 7-Day Challenge to unlock 30 & 60 Day programs</span>
-              </div>
-              <div className="mt-2 h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                <div className="h-full bg-gradient-to-r from-[#64CDD1] to-[#5794A4] rounded-full w-0 animate-pulse" />
-              </div>
-            </div>
-          )}
-
-          {/* Journey Progress Card */}
-          <div className="mt-4 p-3 bg-white/50 rounded-xl">
-            <div className="flex items-center gap-2 mb-2">
-              <Flame size={12} className="text-[#64CDD1]" />
-              <span className="text-[10px] font-semibold text-gray-500">JOURNEY PROGRESS</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-tiber">Ikigai Discovery</span>
-              <span className="text-xs text-gray-400">
-                {localStorage.getItem('ikigai_completed_days') ? JSON.parse(localStorage.getItem('ikigai_completed_days') || '[]').length : 0}/6 Days
-              </span>
-            </div>
-            <div className="mt-2 h-1.5 bg-gray-200 rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-gradient-to-r from-[#64CDD1] to-[#5794A4] rounded-full transition-all duration-500"
-                style={{ 
-                  width: `${((JSON.parse(localStorage.getItem('ikigai_completed_days') || '[]').length) / 6) * 100}%` 
+          {/* Logo Section */}
+          <div className="relative flex items-center gap-3 cursor-pointer group">
+            <div className="relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-[#0A3948]/20 to-[#5794A4]/20 rounded-lg blur-md opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              <img 
+                src={logo} 
+                alt="NomadSeeker Logo" 
+                className="relative w-10 h-10 object-contain rounded-lg transition-all duration-300 group-hover:scale-105"
+                onError={(e) => {
+                  e.target.onerror = null;
+                  e.target.style.display = 'none';
+                  const parent = e.target.parentElement;
+                  if (parent && !parent.querySelector('.fallback-svg')) {
+                    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                    svg.setAttribute('width', '32');
+                    svg.setAttribute('height', '32');
+                    svg.setAttribute('viewBox', '0 0 24 24');
+                    svg.setAttribute('fill', 'none');
+                    svg.setAttribute('stroke', '#0A3948');
+                    svg.setAttribute('stroke-width', '2');
+                    svg.classList.add('fallback-svg');
+                    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                    circle.setAttribute('cx', '12');
+                    circle.setAttribute('cy', '12');
+                    circle.setAttribute('r', '10');
+                    const polygon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+                    polygon.setAttribute('points', '16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76');
+                    svg.appendChild(circle);
+                    svg.appendChild(polygon);
+                    parent.appendChild(svg);
+                  }
                 }}
               />
             </div>
+            <span className="text-xl font-semibold tracking-tight text-[#0A3948]">NomadSeeker</span>
           </div>
-        </div>
 
-        {/* User Profile Section */}
-        <div className="flex items-center gap-3 pt-4 border-t border-[#5794A4]/20">
-          <button 
-            onClick={onLogout} 
-            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[#0A3948]/10 text-[#0A3948] hover:bg-[#0A3948]/20 transition-all hover:scale-105 active:scale-95"
-          >
-            <LogOut size={16} />
-            <span className="text-sm">Logout</span>
-          </button>
-          
-          <div className="flex-1 cursor-pointer" onClick={() => handleNavigation('/profile')}>
-            <div className="font-semibold text-sm text-[#0A3948]">{userName || 'Nomad'}</div>
-            <div className="text-xs text-[#5794A4] flex items-center gap-1">
-              <Award size={10} />
-              <span>{isUnlocked ? 'Champion' : 'Explorer'}</span>
+          {/* Navigation Items */}
+          <div className="flex flex-col gap-1.5 flex-1 overflow-y-auto custom-scrollbar">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const active = isActive(item.path);
+              return (
+                <button
+                  key={item.id}
+                  className={`flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-200 group ${
+                    active 
+                      ? 'bg-[#0A3948]/15 text-[#0A3948] font-medium backdrop-blur-sm' 
+                      : 'text-[#2A4A58] hover:text-[#0A3948] hover:bg-white/50'
+                  }`}
+                  onClick={() => handleNavigation(item.path)}
+                >
+                  <Icon size={20} className={`transition-all duration-200 ${active ? 'text-[#0A3948]' : 'text-[#4A6A78] group-hover:text-[#0A3948]'}`} />
+                  <span className="text-[15px] tracking-normal">{item.label}</span>
+                </button>
+              );
+            })}
+
+            {/* Ikigai Journey Dropdown */}
+            <div className="relative mt-1">
+              <button 
+                className={`flex items-center justify-between w-full px-4 py-2.5 rounded-xl transition-all duration-200 ${
+                  isIkigaiOpen 
+                    ? 'bg-[#0A3948]/15 text-[#0A3948] backdrop-blur-sm' 
+                    : 'text-[#2A4A58] hover:text-[#0A3948] hover:bg-white/50'
+                }`}
+                onClick={() => setIsIkigaiOpen(!isIkigaiOpen)}
+              >
+                <div className="flex items-center gap-3">
+                  <Compass size={20} className={`transition-all duration-200 ${isIkigaiOpen ? 'text-[#0A3948]' : 'text-[#4A6A78]'}`} />
+                  <span className="text-[15px] tracking-normal">Ikigai Journey</span>
+                </div>
+                <ChevronDown size={16} className={`transition-transform duration-200 ${isIkigaiOpen ? 'rotate-180 text-[#0A3948]' : 'text-[#4A6A78]'}`} />
+              </button>
+              
+              {isIkigaiOpen && (
+                <div className="mt-1.5 ml-9 space-y-1 animate-slide-right">
+                  {ikigaiItems.map((item) => {
+                    const Icon = item.icon;
+                    const active = isActive(item.path);
+                    const isLocked = item.locked;
+                    const isAnimating = showLockAnimation && lockedItem === item.id;
+                    
+                    return (
+                      <button
+                        key={item.id}
+                        className={`flex items-center justify-between w-full px-3 py-2 rounded-lg transition-all duration-200 group ${
+                          active && !isLocked
+                            ? 'bg-[#0A3948]/15 text-[#0A3948]' 
+                            : isLocked
+                              ? 'text-[#8DA3B0]/60 cursor-not-allowed'
+                              : 'text-[#2A4A58] hover:text-[#0A3948] hover:bg-white/40'
+                        }`}
+                        onClick={(e) => {
+                          if (!isLocked) {
+                            handleNavigation(item.path);
+                          }
+                        }}
+                        onMouseEnter={(e) => isLocked && handleLockClick(e, item.id, item.label)}
+                      >
+                        <div className="flex items-center gap-3">
+                          <Icon size={16} className={`transition-all duration-200 ${!isLocked && 'group-hover:text-[#0A3948]'}`} />
+                          <div className="text-left">
+                            <span className="text-[13px] font-medium block tracking-normal">{item.label}</span>
+                            <span className="text-[10px] font-light text-[#4A6A78]">{item.description}</span>
+                          </div>
+                        </div>
+                        {isLocked && (
+                          <div className="relative">
+                            <Lock 
+                              size={12} 
+                              className={`transition-all duration-200 ${
+                                isAnimating 
+                                  ? 'animate-shake scale-110' 
+                                  : 'group-hover:scale-105'
+                              }`}
+                              style={{ color: '#D4AF37' }}
+                            />
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
-          </div>
-          
-          <div 
-            onClick={() => handleNavigation('/profile')}
-            className="cursor-pointer transition-all hover:scale-105 active:scale-95"
-          >
-            {profilePhoto ? (
-              <img 
-                src={profilePhoto} 
-                alt="Profile" 
-                className="w-10 h-10 rounded-full border-2 border-[#64CDD1] object-cover transition-all hover:border-[#0A3948]" 
-              />
-            ) : (
-              <div className="w-10 h-10 rounded-full border-2 border-[#64CDD1] bg-gradient-to-br from-[#64CDD1]/20 to-[#5794A4]/20 flex items-center justify-center text-[#0A3948] font-bold transition-all hover:border-[#0A3948]">
-                {getInitials()}
+
+            {/* Completion Status Indicator */}
+            {!isUnlocked && (
+              <div className="mt-6 p-3 bg-white/70 backdrop-blur-sm rounded-xl border border-[#0A3948]/20 shadow-sm">
+                <div className="flex items-center gap-2 mb-1.5">
+                  <Target size={13} className="text-[#0A3948]" />
+                  <span className="text-[11px] font-medium text-[#2A4A58] tracking-wide">Complete 7-Day Challenge to unlock 30 & 60 Day programs</span>
+                </div>
+                <div className="mt-2 h-1.5 bg-[#0A3948]/20 rounded-full overflow-hidden">
+                  <div className="h-full bg-gradient-to-r from-[#0A3948] to-[#5794A4] rounded-full w-0 animate-pulse" />
+                </div>
               </div>
             )}
+
+            {/* Journey Progress Card */}
+            <div className="mt-4 p-4 bg-white/60 backdrop-blur-sm rounded-xl border border-[#0A3948]/15 shadow-sm">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="p-1 rounded-lg bg-[#0A3948]/10">
+                  <Flame size={12} className="text-[#0A3948]" />
+                </div>
+                <span className="text-[10px] font-semibold tracking-wider text-[#4A6A78] uppercase">Journey Progress</span>
+              </div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-[#0A3948]">Ikigai Discovery</span>
+                <span className="text-xs font-medium text-[#0A3948]">
+                  {localStorage.getItem('ikigai_completed_days') ? JSON.parse(localStorage.getItem('ikigai_completed_days') || '[]').length : 0}/6 Days
+                </span>
+              </div>
+              <div className="h-2 bg-[#0A3948]/20 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-gradient-to-r from-[#0A3948] to-[#5794A4] rounded-full transition-all duration-700 ease-out"
+                  style={{ 
+                    width: `${((JSON.parse(localStorage.getItem('ikigai_completed_days') || '[]').length) / 6) * 100}%`,
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* User Profile Section */}
+          <div className="flex items-center gap-3 pt-5 border-t border-[#0A3948]/15 mt-auto">
+            <button 
+              onClick={onLogout} 
+              className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/70 text-[#0A3948] hover:bg-white/90 transition-all duration-200 group backdrop-blur-sm"
+            >
+              <LogOut size="16" className="transition-transform duration-200 group-hover:translate-x-0.5" />
+              <span className="text-sm font-medium">Logout</span>
+            </button>
+            
+            <div className="flex-1 cursor-pointer" onClick={() => handleNavigation('/profile')}>
+              <div className="font-semibold text-sm text-[#0A3948] tracking-tight">{userName || 'Nomad'}</div>
+              <div className="text-xs text-[#4A6A78] flex items-center gap-1.5 mt-0.5">
+                <div className="w-1.5 h-1.5 rounded-full bg-[#0A3948]" />
+                <span>{isUnlocked ? 'Champion' : 'Explorer'}</span>
+              </div>
+            </div>
+            
+            <div 
+              onClick={() => handleNavigation('/profile')}
+              className="cursor-pointer transition-all duration-200 hover:scale-105 active:scale-95"
+            >
+              {profilePhoto ? (
+                <div className="relative">
+                  <img 
+                    src={profilePhoto} 
+                    alt="Profile" 
+                    className="w-10 h-10 rounded-full border-2 border-[#0A3948] object-cover shadow-md" 
+                  />
+                  <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-400 rounded-full border-2 border-white" />
+                </div>
+              ) : (
+                <div className="relative">
+                  <div className="w-10 h-10 rounded-full border-2 border-[#0A3948] bg-gradient-to-br from-[#A8CDE0] to-[#8BB8D0] flex items-center justify-center text-[#0A3948] font-semibold shadow-md">
+                    {getInitials()}
+                  </div>
+                  <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-400 rounded-full border-2 border-white" />
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -352,9 +374,9 @@ const Navbar = ({ user: propUser, onLogout }) => {
         {isMobileMenuOpen && (
           <button
             onClick={() => setIsMobileMenuOpen(false)}
-            className="md:hidden absolute top-4 right-4 p-2 rounded-full bg-gray-100"
+            className="md:hidden absolute top-4 right-4 p-2 rounded-full bg-white/70 backdrop-blur-sm z-20"
           >
-            <X size={20} className="text-gray-500" />
+            <X size={20} className="text-[#0A3948]" />
           </button>
         )}
       </nav>
@@ -362,7 +384,7 @@ const Navbar = ({ user: propUser, onLogout }) => {
       {/* Overlay for mobile */}
       {isMobileMenuOpen && (
         <div 
-          className="fixed inset-0 bg-black/50 z-30 md:hidden"
+          className="fixed inset-0 bg-black/30 backdrop-blur-sm z-30 md:hidden transition-opacity duration-300"
           onClick={() => setIsMobileMenuOpen(false)}
         />
       )}
@@ -371,7 +393,7 @@ const Navbar = ({ user: propUser, onLogout }) => {
         @keyframes slideRight {
           from {
             opacity: 0;
-            transform: translateX(-10px);
+            transform: translateX(-8px);
           }
           to {
             opacity: 1;
@@ -379,64 +401,40 @@ const Navbar = ({ user: propUser, onLogout }) => {
           }
         }
         
+        @keyframes shimmer {
+          0% {
+            transform: translateX(-100%);
+          }
+          100% {
+            transform: translateX(100%);
+          }
+        }
+        
+        .animate-shimmer {
+          animation: shimmer 2s infinite;
+        }
+        
         .animate-slide-right {
-          animation: slideRight 0.3s ease-out forwards;
+          animation: slideRight 0.2s ease-out forwards;
         }
         
         @keyframes shake {
-          0%, 100% { 
-            transform: translateX(0) rotate(0deg);
-          }
-          20% { 
-            transform: translateX(-2px) rotate(-5deg);
-          }
-          40% { 
-            transform: translateX(2px) rotate(5deg);
-          }
-          60% { 
-            transform: translateX(-1px) rotate(-3deg);
-          }
-          80% { 
-            transform: translateX(1px) rotate(3deg);
-          }
+          0%, 100% { transform: translateX(0) rotate(0deg); }
+          20% { transform: translateX(-2px) rotate(-6deg); }
+          40% { transform: translateX(2px) rotate(6deg); }
+          60% { transform: translateX(-1px) rotate(-3deg); }
+          80% { transform: translateX(1px) rotate(3deg); }
         }
         
         .animate-shake {
-          animation: shake 0.4s ease-in-out;
-        }
-        
-        @keyframes ping-slow {
-          0% {
-            transform: scale(1);
-            opacity: 0.6;
-          }
-          75%, 100% {
-            transform: scale(1.8);
-            opacity: 0;
-          }
-        }
-        
-        .animate-ping-slow {
-          animation: ping-slow 1s cubic-bezier(0, 0, 0.2, 1) infinite;
+          animation: shake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
         }
         
         @keyframes fadeInOut {
-          0% {
-            opacity: 0;
-            transform: translateY(10px);
-          }
-          15% {
-            opacity: 1;
-            transform: translateY(0);
-          }
-          85% {
-            opacity: 1;
-            transform: translateY(0);
-          }
-          100% {
-            opacity: 0;
-            transform: translateY(-10px);
-          }
+          0% { opacity: 0; transform: translateY(10px); }
+          15% { opacity: 1; transform: translateY(0); }
+          85% { opacity: 1; transform: translateY(0); }
+          100% { opacity: 0; transform: translateY(-10px); }
         }
         
         .animate-fade-in-out {
@@ -448,17 +446,24 @@ const Navbar = ({ user: propUser, onLogout }) => {
         }
         
         .custom-scrollbar::-webkit-scrollbar-track {
-          background: #F1F5F9;
+          background: rgba(10, 57, 72, 0.1);
           border-radius: 10px;
         }
         
         .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: #CBD5E1;
+          background: rgba(10, 57, 72, 0.2);
           border-radius: 10px;
         }
         
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: #5794A4;
+          background: rgba(10, 57, 72, 0.3);
+        }
+
+        /* Clean typography */
+        * {
+          -webkit-font-smoothing: antialiased;
+          -moz-osx-font-smoothing: grayscale;
+          font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
         }
       `}</style>
     </>
