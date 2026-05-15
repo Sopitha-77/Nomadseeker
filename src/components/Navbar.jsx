@@ -18,34 +18,42 @@ const Navbar = ({ user: propUser, onLogout }) => {
   const [profilePhoto, setProfilePhoto] = useState(null);
   const [userName, setUserName] = useState('');
   const [userEmail, setUserEmail] = useState('');
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Colors from the Home page button gradient
+  const btnGradient = 'linear-gradient(to right, rgb(43,108,176), rgb(26,54,93))';
+  const lightBlue = 'rgb(74,144,226)';
+  const darkNavy = 'rgb(26,54,93)';
+  const blue = 'rgb(43,108,176)';
+
+  // Check screen size for responsive behavior
+  useEffect(() => {
+    const checkScreenSize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    checkScreenSize();
+    window.addEventListener('resize', checkScreenSize);
+    return () => window.removeEventListener('resize', checkScreenSize);
+  }, []);
 
   // Load user data from localStorage
   useEffect(() => {
     const loadUserData = () => {
-      // Try to get from props first
       if (propUser?.name) {
         setUserName(propUser.name);
         setUserEmail(propUser.email || '');
       }
       
-      // Load from profile
       const savedProfile = localStorage.getItem('user_profile');
       if (savedProfile) {
         try {
           const profile = JSON.parse(savedProfile);
-          if (profile.profilePhotoUrl) {
-            setProfilePhoto(profile.profilePhotoUrl);
-          }
-          if (profile.firstName && profile.lastName) {
-            setUserName(`${profile.firstName} ${profile.lastName}`);
-          }
-          if (profile.email) {
-            setUserEmail(profile.email);
-          }
+          if (profile.profilePhotoUrl) setProfilePhoto(profile.profilePhotoUrl);
+          if (profile.firstName && profile.lastName) setUserName(`${profile.firstName} ${profile.lastName}`);
+          if (profile.email) setUserEmail(profile.email);
         } catch (e) {}
       }
       
-      // Load from ikigai user data
       const userData = localStorage.getItem('ikigai_user');
       if (userData) {
         try {
@@ -55,11 +63,10 @@ const Navbar = ({ user: propUser, onLogout }) => {
         } catch (e) {}
       }
     };
-    
     loadUserData();
   }, [propUser]);
 
-  // Check if user has completed the 7-day challenge to unlock 30 and 60 day programs
+  // Check if user has completed the 7-day challenge
   const hasCompletedSevenDays = () => {
     const completedDays = localStorage.getItem('ikigai_completed_days');
     if (completedDays) {
@@ -76,16 +83,16 @@ const Navbar = ({ user: propUser, onLogout }) => {
   const isUnlocked = hasCompletedSevenDays();
 
   const navItems = [
-    { id: 'home', path: '/', label: 'Home', icon: Home, color: '#5794A4' },
-    { id: 'about', path: '/about', label: 'About Us', icon: Info, color: '#5794A4' },
-    { id: 'contact', path: '/contact', label: 'Contact Us', icon: Mail, color: '#5794A4' },
-    { id: 'profile', path: '/profile', label: 'Profile', icon: User, color: '#5794A4' }
+    { id: 'home', path: '/', label: 'Home', icon: Home },
+    { id: 'about', path: '/about', label: 'About Us', icon: Info },
+    { id: 'contact', path: '/contact', label: 'Contact Us', icon: Mail },
+    { id: 'profile', path: '/profile', label: 'Profile', icon: User }
   ];
 
   const ikigaiItems = [
-    { id: 'sevendays', path: '/sevendays', label: '7-Day Discovery', icon: Calendar, color: '#64CDD1', description: 'Find your purpose in 7 days', locked: false },
-    { id: 'thirty', path: '/thirty', label: '30-Day Execution', icon: TrendingUp, color: '#64CDD1', description: 'Build your business', locked: !isUnlocked },
-    { id: 'sixty', path: '/sixty', label: '60-Day Income', icon: Globe, color: '#64CDD1', description: 'Generate income', locked: !isUnlocked }
+    { id: 'sevendays', path: '/sevendays', label: '7-Day Discovery', icon: Calendar, description: 'Find your purpose in 7 days', locked: false },
+    { id: 'thirty', path: '/thirty', label: '30-Day Execution', icon: TrendingUp, description: 'Build your business', locked: !isUnlocked },
+    { id: 'sixty', path: '/sixty', label: '60-Day Income', icon: Globe, description: 'Generate income', locked: !isUnlocked }
   ];
 
   const isActive = (path) => location.pathname === path;
@@ -99,12 +106,19 @@ const Navbar = ({ user: propUser, onLogout }) => {
       setLockedItem(null);
     }, 1000);
     
-    // Show tooltip about completing 7-day challenge
     const tooltip = document.createElement('div');
     tooltip.textContent = `✨ Complete the 7-Day Discovery Challenge first to unlock ${itemLabel}! ✨`;
-    tooltip.className = 'fixed z-50 bg-gradient-to-r from-[#0A3948] to-[#5794A4] text-white px-4 py-2 rounded-lg text-sm shadow-lg animate-fade-in-out';
-    tooltip.style.top = e.clientY - 40 + 'px';
-    tooltip.style.left = e.clientX - 150 + 'px';
+    tooltip.style.position = 'fixed';
+    tooltip.style.zIndex = '1000';
+    tooltip.style.background = btnGradient;
+    tooltip.style.color = 'white';
+    tooltip.style.padding = '8px 16px';
+    tooltip.style.borderRadius = '12px';
+    tooltip.style.fontSize = '12px';
+    tooltip.style.fontWeight = '600';
+    tooltip.style.boxShadow = '0 4px 20px rgba(0,0,0,0.2)';
+    tooltip.style.top = (e.clientY - 40) + 'px';
+    tooltip.style.left = (e.clientX - 180) + 'px';
     document.body.appendChild(tooltip);
     setTimeout(() => tooltip.remove(), 2500);
   };
@@ -128,159 +142,242 @@ const Navbar = ({ user: propUser, onLogout }) => {
     return userName.substring(0, 2).toUpperCase();
   };
 
+  const completedDaysCount = (() => {
+    try {
+      return JSON.parse(localStorage.getItem('ikigai_completed_days') || '[]').length;
+    } catch {
+      return 0;
+    }
+  })();
+
   return (
     <>
-      {/* Mobile Menu Button */}
+      {/* Mobile Menu Button - Only visible on mobile */}
       <button
         onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-        className="fixed top-4 right-4 z-50 md:hidden bg-[#8BB8D0]/90 backdrop-blur-md p-2 rounded-xl shadow-lg border border-[#0A3948]/30"
+        style={{
+          position: 'fixed',
+          top: '16px',
+          right: '16px',
+          zIndex: 1000,
+          display: isMobile ? 'flex' : 'none',
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: '44px',
+          height: '44px',
+          background: 'rgba(255,255,255,0.95)',
+          backdropFilter: 'blur(10px)',
+          borderRadius: '12px',
+          border: `1px solid ${lightBlue}40`,
+          cursor: 'pointer',
+          boxShadow: '0 2px 12px rgba(0,0,0,0.08)'
+        }}
       >
-        {isMobileMenuOpen ? <X size={24} className="text-[#0A3948]" /> : <Menu size={24} className="text-[#0A3948]" />}
+        {isMobileMenuOpen ? <X size={22} color={blue} /> : <Menu size={22} color={blue} />}
       </button>
 
-      {/* Sidebar Navigation - Darker light blue gradient background */}
-      <nav className={`fixed top-0 left-0 w-[280px] h-screen 
-        overflow-hidden
-        z-40 shadow-2xl
-        flex flex-col gap-6 p-6 
-        transition-transform duration-300 
-        ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
-        
-        {/* Darker light blue gradient background */}
-        <div className="absolute inset-0 bg-gradient-to-r from-[#A8CDE0]/80 via-[#8BB8D0]/70 to-[#A8CDE0]/80"></div>
-        
-        {/* Subtle grid pattern */}
-        <svg className="absolute inset-0 w-full h-full opacity-[0.04]" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <pattern id="story-grid" width="40" height="40" patternUnits="userSpaceOnUse">
-              <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#0A3948" strokeWidth="1"/>
-            </pattern>
-          </defs>
-          <rect width="100%" height="100%" fill="url(#story-grid)" />
-        </svg>
+      {/* Sidebar Navigation - Using Home page gradient colors */}
+      <nav
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: isMobile ? '280px' : '280px',
+          height: '100vh',
+          zIndex: 1000,
+          boxShadow: '4px 0 24px rgba(0,0,0,0.12)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '24px',
+          padding: '24px',
+          transition: 'transform 0.3s ease-in-out',
+          transform: isMobile ? (isMobileMenuOpen ? 'translateX(0)' : 'translateX(-100%)') : 'translateX(0)',
+          background: btnGradient,
+        }}
+      >
+        {/* Subtle grid overlay */}
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            opacity: 0.05,
+            pointerEvents: 'none',
+            backgroundImage: `url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M 40 0 L 0 0 0 40' fill='none' stroke='white' strokeWidth='1'/%3E%3C/svg%3E")`,
+          }}
+        />
 
-        {/* Content wrapper with higher z-index */}
-        <div className="relative z-10 flex flex-col gap-6 h-full">
+        {/* Content wrapper */}
+        <div style={{ position: 'relative', zIndex: 2, display: 'flex', flexDirection: 'column', gap: '24px', height: '100%' }}>
 
           {/* Logo Section */}
-          <div className="relative flex items-center gap-3 cursor-pointer group">
-            <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-r from-[#0A3948]/20 to-[#5794A4]/20 rounded-lg blur-md opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-              <img 
-                src={logo} 
-                alt="NomadSeeker Logo" 
-                className="relative w-10 h-10 object-contain rounded-lg transition-all duration-300 group-hover:scale-105"
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              cursor: 'pointer',
+              paddingBottom: '12px',
+              borderBottom: '1px solid rgba(255,255,255,0.2)'
+            }}
+            onClick={() => handleNavigation('/')}
+          >
+            <div style={{ position: 'relative' }}>
+              <img
+                src={logo}
+                alt="NomadSeeker Logo"
+                style={{
+                  width: '40px',
+                  height: '40px',
+                  objectFit: 'contain',
+                  borderRadius: '10px',
+                }}
                 onError={(e) => {
                   e.target.onerror = null;
                   e.target.style.display = 'none';
-                  const parent = e.target.parentElement;
-                  if (parent && !parent.querySelector('.fallback-svg')) {
-                    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-                    svg.setAttribute('width', '32');
-                    svg.setAttribute('height', '32');
-                    svg.setAttribute('viewBox', '0 0 24 24');
-                    svg.setAttribute('fill', 'none');
-                    svg.setAttribute('stroke', '#0A3948');
-                    svg.setAttribute('stroke-width', '2');
-                    svg.classList.add('fallback-svg');
-                    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-                    circle.setAttribute('cx', '12');
-                    circle.setAttribute('cy', '12');
-                    circle.setAttribute('r', '10');
-                    const polygon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
-                    polygon.setAttribute('points', '16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76');
-                    svg.appendChild(circle);
-                    svg.appendChild(polygon);
-                    parent.appendChild(svg);
-                  }
                 }}
               />
             </div>
-            <span className="text-xl font-semibold tracking-tight text-[#0A3948]">NomadSeeker</span>
+            <span
+              style={{
+                fontSize: '18px',
+                fontWeight: 700,
+                letterSpacing: '-0.5px',
+                color: '#FFFFFF',
+              }}
+            >
+              NomadSeeker
+            </span>
           </div>
 
           {/* Navigation Items */}
-          <div className="flex flex-col gap-1.5 flex-1 overflow-y-auto custom-scrollbar">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: 1, overflowY: 'auto' }}>
             {navItems.map((item) => {
               const Icon = item.icon;
               const active = isActive(item.path);
               return (
                 <button
                   key={item.id}
-                  className={`flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-200 group ${
-                    active 
-                      ? 'bg-[#0A3948]/15 text-[#0A3948] font-medium backdrop-blur-sm' 
-                      : 'text-[#2A4A58] hover:text-[#0A3948] hover:bg-white/50'
-                  }`}
                   onClick={() => handleNavigation(item.path)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    padding: '10px 16px',
+                    borderRadius: '12px',
+                    border: 'none',
+                    cursor: 'pointer',
+                    width: '100%',
+                    transition: 'all 0.2s ease',
+                    background: active ? 'rgba(255,255,255,0.2)' : 'transparent',
+                    color: active ? '#FFFFFF' : 'rgba(255,255,255,0.85)',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!active) e.currentTarget.style.background = 'rgba(255,255,255,0.15)';
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!active) e.currentTarget.style.background = 'transparent';
+                  }}
                 >
-                  <Icon size={20} className={`transition-all duration-200 ${active ? 'text-[#0A3948]' : 'text-[#4A6A78] group-hover:text-[#0A3948]'}`} />
-                  <span className="text-[15px] tracking-normal">{item.label}</span>
+                  <Icon size={20} style={{ color: active ? '#FFFFFF' : 'rgba(255,255,255,0.7)' }} />
+                  <span style={{ fontSize: '14px', fontWeight: active ? 600 : 400 }}>{item.label}</span>
                 </button>
               );
             })}
 
             {/* Ikigai Journey Dropdown */}
-            <div className="relative mt-1">
-              <button 
-                className={`flex items-center justify-between w-full px-4 py-2.5 rounded-xl transition-all duration-200 ${
-                  isIkigaiOpen 
-                    ? 'bg-[#0A3948]/15 text-[#0A3948] backdrop-blur-sm' 
-                    : 'text-[#2A4A58] hover:text-[#0A3948] hover:bg-white/50'
-                }`}
+            <div style={{ marginTop: '4px' }}>
+              <button
                 onClick={() => setIsIkigaiOpen(!isIkigaiOpen)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  width: '100%',
+                  padding: '10px 16px',
+                  borderRadius: '12px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  background: isIkigaiOpen ? 'rgba(255,255,255,0.2)' : 'transparent',
+                  color: isIkigaiOpen ? '#FFFFFF' : 'rgba(255,255,255,0.85)',
+                  transition: 'all 0.2s ease',
+                }}
+                onMouseEnter={(e) => {
+                  if (!isIkigaiOpen) e.currentTarget.style.background = 'rgba(255,255,255,0.15)';
+                }}
+                onMouseLeave={(e) => {
+                  if (!isIkigaiOpen) e.currentTarget.style.background = 'transparent';
+                }}
               >
-                <div className="flex items-center gap-3">
-                  <Compass size={20} className={`transition-all duration-200 ${isIkigaiOpen ? 'text-[#0A3948]' : 'text-[#4A6A78]'}`} />
-                  <span className="text-[15px] tracking-normal">Ikigai Journey</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <Compass size={20} style={{ color: isIkigaiOpen ? '#FFFFFF' : 'rgba(255,255,255,0.7)' }} />
+                  <span style={{ fontSize: '14px', fontWeight: isIkigaiOpen ? 600 : 400 }}>Ikigai Journey</span>
                 </div>
-                <ChevronDown size={16} className={`transition-transform duration-200 ${isIkigaiOpen ? 'rotate-180 text-[#0A3948]' : 'text-[#4A6A78]'}`} />
+                <ChevronDown
+                  size={16}
+                  style={{
+                    transition: 'transform 0.2s ease',
+                    transform: isIkigaiOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                    color: 'rgba(255,255,255,0.6)'
+                  }}
+                />
               </button>
-              
+
               {isIkigaiOpen && (
-                <div className="mt-1.5 ml-9 space-y-1 animate-slide-right">
+                <div
+                  style={{
+                    marginTop: '6px',
+                    marginLeft: '36px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '4px',
+                    animation: 'slideRight 0.2s ease-out forwards',
+                  }}
+                >
                   {ikigaiItems.map((item) => {
                     const Icon = item.icon;
                     const active = isActive(item.path);
                     const isLocked = item.locked;
                     const isAnimating = showLockAnimation && lockedItem === item.id;
-                    
+
                     return (
                       <button
                         key={item.id}
-                        className={`flex items-center justify-between w-full px-3 py-2 rounded-lg transition-all duration-200 group ${
-                          active && !isLocked
-                            ? 'bg-[#0A3948]/15 text-[#0A3948]' 
-                            : isLocked
-                              ? 'text-[#8DA3B0]/60 cursor-not-allowed'
-                              : 'text-[#2A4A58] hover:text-[#0A3948] hover:bg-white/40'
-                        }`}
                         onClick={(e) => {
-                          if (!isLocked) {
-                            handleNavigation(item.path);
-                          }
+                          if (!isLocked) handleNavigation(item.path);
                         }}
                         onMouseEnter={(e) => isLocked && handleLockClick(e, item.id, item.label)}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          width: '100%',
+                          padding: '8px 12px',
+                          borderRadius: '10px',
+                          border: 'none',
+                          cursor: isLocked ? 'not-allowed' : 'pointer',
+                          background: active && !isLocked ? 'rgba(255,255,255,0.15)' : 'transparent',
+                          opacity: isLocked ? 0.6 : 1,
+                          transition: 'all 0.2s ease',
+                        }}
                       >
-                        <div className="flex items-center gap-3">
-                          <Icon size={16} className={`transition-all duration-200 ${!isLocked && 'group-hover:text-[#0A3948]'}`} />
-                          <div className="text-left">
-                            <span className="text-[13px] font-medium block tracking-normal">{item.label}</span>
-                            <span className="text-[10px] font-light text-[#4A6A78]">{item.description}</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          <Icon size={14} style={{ color: active && !isLocked ? '#FFFFFF' : 'rgba(255,255,255,0.6)' }} />
+                          <div style={{ textAlign: 'left' }}>
+                            <div style={{ fontSize: '12px', fontWeight: active ? 600 : 400, color: '#FFFFFF' }}>
+                              {item.label}
+                            </div>
+                            <div style={{ fontSize: '9px', color: 'rgba(255,255,255,0.6)' }}>{item.description}</div>
                           </div>
                         </div>
                         {isLocked && (
-                          <div className="relative">
-                            <Lock 
-                              size={12} 
-                              className={`transition-all duration-200 ${
-                                isAnimating 
-                                  ? 'animate-shake scale-110' 
-                                  : 'group-hover:scale-105'
-                              }`}
-                              style={{ color: '#D4AF37' }}
-                            />
-                          </div>
+                          <Lock
+                            size={11}
+                            style={{
+                              color: '#FFD700',
+                              transition: 'all 0.2s ease',
+                              transform: isAnimating ? 'scale(1.1)' : 'scale(1)',
+                            }}
+                          />
                         )}
                       </button>
                     );
@@ -291,36 +388,81 @@ const Navbar = ({ user: propUser, onLogout }) => {
 
             {/* Completion Status Indicator */}
             {!isUnlocked && (
-              <div className="mt-6 p-3 bg-white/70 backdrop-blur-sm rounded-xl border border-[#0A3948]/20 shadow-sm">
-                <div className="flex items-center gap-2 mb-1.5">
-                  <Target size={13} className="text-[#0A3948]" />
-                  <span className="text-[11px] font-medium text-[#2A4A58] tracking-wide">Complete 7-Day Challenge to unlock 30 & 60 Day programs</span>
+              <div
+                style={{
+                  marginTop: '16px',
+                  padding: '12px',
+                  background: 'rgba(0,0,0,0.2)',
+                  backdropFilter: 'blur(8px)',
+                  borderRadius: '12px',
+                  border: '1px solid rgba(255,255,255,0.15)',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                  <Target size={12} style={{ color: '#FFD700' }} />
+                  <span style={{ fontSize: '10px', fontWeight: 600, color: 'rgba(255,255,255,0.9)' }}>
+                    Complete 7-Day Challenge to unlock 30 & 60 Day programs
+                  </span>
                 </div>
-                <div className="mt-2 h-1.5 bg-[#0A3948]/20 rounded-full overflow-hidden">
-                  <div className="h-full bg-gradient-to-r from-[#0A3948] to-[#5794A4] rounded-full w-0 animate-pulse" />
+                <div
+                  style={{
+                    height: '4px',
+                    background: 'rgba(0,0,0,0.2)',
+                    borderRadius: '99px',
+                    overflow: 'hidden',
+                  }}
+                >
+                  <div
+                    style={{
+                      height: '100%',
+                      width: '30%',
+                      background: 'linear-gradient(90deg, #FFD700, #FFA500)',
+                      borderRadius: '99px',
+                      animation: 'pulse 1.5s ease-in-out infinite',
+                    }}
+                  />
                 </div>
               </div>
             )}
 
             {/* Journey Progress Card */}
-            <div className="mt-4 p-4 bg-white/60 backdrop-blur-sm rounded-xl border border-[#0A3948]/15 shadow-sm">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="p-1 rounded-lg bg-[#0A3948]/10">
-                  <Flame size={12} className="text-[#0A3948]" />
+            <div
+              style={{
+                marginTop: '12px',
+                padding: '14px',
+                background: 'rgba(0,0,0,0.15)',
+                backdropFilter: 'blur(8px)',
+                borderRadius: '12px',
+                border: '1px solid rgba(255,255,255,0.1)',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                <div style={{ padding: '4px', background: 'rgba(255,255,255,0.1)', borderRadius: '8px' }}>
+                  <Flame size={11} style={{ color: '#FFD700' }} />
                 </div>
-                <span className="text-[10px] font-semibold tracking-wider text-[#4A6A78] uppercase">Journey Progress</span>
-              </div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-[#0A3948]">Ikigai Discovery</span>
-                <span className="text-xs font-medium text-[#0A3948]">
-                  {localStorage.getItem('ikigai_completed_days') ? JSON.parse(localStorage.getItem('ikigai_completed_days') || '[]').length : 0}/6 Days
+                <span style={{ fontSize: '9px', fontWeight: 700, letterSpacing: '1px', color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase' }}>
+                  Journey Progress
                 </span>
               </div>
-              <div className="h-2 bg-[#0A3948]/20 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-gradient-to-r from-[#0A3948] to-[#5794A4] rounded-full transition-all duration-700 ease-out"
-                  style={{ 
-                    width: `${((JSON.parse(localStorage.getItem('ikigai_completed_days') || '[]').length) / 6) * 100}%`,
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                <span style={{ fontSize: '12px', fontWeight: 600, color: '#FFFFFF' }}>Ikigai Discovery</span>
+                <span style={{ fontSize: '11px', fontWeight: 600, color: '#FFD700' }}>{completedDaysCount}/6 Days</span>
+              </div>
+              <div
+                style={{
+                  height: '6px',
+                  background: 'rgba(0,0,0,0.2)',
+                  borderRadius: '99px',
+                  overflow: 'hidden',
+                }}
+              >
+                <div
+                  style={{
+                    height: '100%',
+                    width: `${(completedDaysCount / 6) * 100}%`,
+                    background: 'linear-gradient(90deg, #FFD700, #FFA500, #FF8C00)',
+                    borderRadius: '99px',
+                    transition: 'width 0.7s ease-out',
                   }}
                 />
               </div>
@@ -328,68 +470,105 @@ const Navbar = ({ user: propUser, onLogout }) => {
           </div>
 
           {/* User Profile Section */}
-          <div className="flex items-center gap-3 pt-5 border-t border-[#0A3948]/15 mt-auto">
-            <button 
-              onClick={onLogout} 
-              className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/70 text-[#0A3948] hover:bg-white/90 transition-all duration-200 group backdrop-blur-sm"
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              paddingTop: '16px',
+              borderTop: '1px solid rgba(255,255,255,0.15)',
+            }}
+          >
+            <button
+              onClick={onLogout}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '8px 14px',
+                borderRadius: '10px',
+                border: 'none',
+                background: 'rgba(0,0,0,0.2)',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                color: '#FFFFFF',
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(0,0,0,0.3)')}
+              onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(0,0,0,0.2)')}
             >
-              <LogOut size="16" className="transition-transform duration-200 group-hover:translate-x-0.5" />
-              <span className="text-sm font-medium">Logout</span>
+              <LogOut size="14" style={{ color: '#FFFFFF' }} />
+              <span style={{ fontSize: '12px', fontWeight: 500 }}>Logout</span>
             </button>
-            
-            <div className="flex-1 cursor-pointer" onClick={() => handleNavigation('/profile')}>
-              <div className="font-semibold text-sm text-[#0A3948] tracking-tight">{userName || 'Nomad'}</div>
-              <div className="text-xs text-[#4A6A78] flex items-center gap-1.5 mt-0.5">
-                <div className="w-1.5 h-1.5 rounded-full bg-[#0A3948]" />
+
+            <div
+              style={{ flex: 1, cursor: 'pointer' }}
+              onClick={() => handleNavigation('/profile')}
+            >
+              <div style={{ fontSize: '13px', fontWeight: 600, color: '#FFFFFF' }}>{userName || 'Nomad'}</div>
+              <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.7)', display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
+                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#FFD700' }} />
                 <span>{isUnlocked ? 'Champion' : 'Explorer'}</span>
               </div>
             </div>
-            
-            <div 
+
+            <div
               onClick={() => handleNavigation('/profile')}
-              className="cursor-pointer transition-all duration-200 hover:scale-105 active:scale-95"
+              style={{ cursor: 'pointer', transition: 'transform 0.2s ease' }}
+              onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.05)')}
+              onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
             >
               {profilePhoto ? (
-                <div className="relative">
-                  <img 
-                    src={profilePhoto} 
-                    alt="Profile" 
-                    className="w-10 h-10 rounded-full border-2 border-[#0A3948] object-cover shadow-md" 
-                  />
-                  <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-400 rounded-full border-2 border-white" />
-                </div>
+                <img
+                  src={profilePhoto}
+                  alt="Profile"
+                  style={{
+                    width: '38px',
+                    height: '38px',
+                    borderRadius: '50%',
+                    border: '2px solid rgba(255,255,255,0.5)',
+                    objectFit: 'cover',
+                  }}
+                />
               ) : (
-                <div className="relative">
-                  <div className="w-10 h-10 rounded-full border-2 border-[#0A3948] bg-gradient-to-br from-[#A8CDE0] to-[#8BB8D0] flex items-center justify-center text-[#0A3948] font-semibold shadow-md">
-                    {getInitials()}
-                  </div>
-                  <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-400 rounded-full border-2 border-white" />
+                <div
+                  style={{
+                    width: '38px',
+                    height: '38px',
+                    borderRadius: '50%',
+                    background: 'linear-gradient(135deg, #FFD700, #FFA500)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: darkNavy,
+                    fontWeight: 700,
+                    fontSize: '14px',
+                    border: '2px solid rgba(255,255,255,0.5)',
+                  }}
+                >
+                  {getInitials()}
                 </div>
               )}
             </div>
           </div>
         </div>
-
-        {/* Mobile Close Button */}
-        {isMobileMenuOpen && (
-          <button
-            onClick={() => setIsMobileMenuOpen(false)}
-            className="md:hidden absolute top-4 right-4 p-2 rounded-full bg-white/70 backdrop-blur-sm z-20"
-          >
-            <X size={20} className="text-[#0A3948]" />
-          </button>
-        )}
       </nav>
 
       {/* Overlay for mobile */}
-      {isMobileMenuOpen && (
-        <div 
-          className="fixed inset-0 bg-black/30 backdrop-blur-sm z-30 md:hidden transition-opacity duration-300"
+      {isMobile && isMobileMenuOpen && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.3)',
+            backdropFilter: 'blur(4px)',
+            zIndex: 999,
+            transition: 'opacity 0.3s ease',
+          }}
           onClick={() => setIsMobileMenuOpen(false)}
         />
       )}
 
-      <style jsx>{`
+      <style>{`
         @keyframes slideRight {
           from {
             opacity: 0;
@@ -401,23 +580,6 @@ const Navbar = ({ user: propUser, onLogout }) => {
           }
         }
         
-        @keyframes shimmer {
-          0% {
-            transform: translateX(-100%);
-          }
-          100% {
-            transform: translateX(100%);
-          }
-        }
-        
-        .animate-shimmer {
-          animation: shimmer 2s infinite;
-        }
-        
-        .animate-slide-right {
-          animation: slideRight 0.2s ease-out forwards;
-        }
-        
         @keyframes shake {
           0%, 100% { transform: translateX(0) rotate(0deg); }
           20% { transform: translateX(-2px) rotate(-6deg); }
@@ -426,44 +588,41 @@ const Navbar = ({ user: propUser, onLogout }) => {
           80% { transform: translateX(1px) rotate(3deg); }
         }
         
+        @keyframes pulse {
+          0%, 100% { opacity: 0.6; }
+          50% { opacity: 1; }
+        }
+        
+        .animate-slide-right {
+          animation: slideRight 0.2s ease-out forwards;
+        }
+        
         .animate-shake {
           animation: shake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
         }
-        
-        @keyframes fadeInOut {
-          0% { opacity: 0; transform: translateY(10px); }
-          15% { opacity: 1; transform: translateY(0); }
-          85% { opacity: 1; transform: translateY(0); }
-          100% { opacity: 0; transform: translateY(-10px); }
-        }
-        
-        .animate-fade-in-out {
-          animation: fadeInOut 2.5s ease-out forwards;
-        }
-        
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 4px;
-        }
-        
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: rgba(10, 57, 72, 0.1);
-          border-radius: 10px;
-        }
-        
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: rgba(10, 57, 72, 0.2);
-          border-radius: 10px;
-        }
-        
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: rgba(10, 57, 72, 0.3);
-        }
 
-        /* Clean typography */
         * {
           -webkit-font-smoothing: antialiased;
           -moz-osx-font-smoothing: grayscale;
-          font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        /* Custom scrollbar for sidebar */
+        ::-webkit-scrollbar {
+          width: 4px;
+        }
+        
+        ::-webkit-scrollbar-track {
+          background: rgba(255,255,255,0.1);
+          border-radius: 10px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+          background: rgba(255,255,255,0.3);
+          border-radius: 10px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+          background: rgba(255,255,255,0.5);
         }
       `}</style>
     </>

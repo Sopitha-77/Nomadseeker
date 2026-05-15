@@ -6,7 +6,7 @@ import {
   CheckCircle, Star, MessageCircle, X, MapPin, Briefcase,
   TrendingUp, Rocket, Users, Shield, Zap, Target, ChevronLeft,
   Pause, Award, Crown, Code, Brain, Sparkles, Lightbulb,
-  Lock as LockIcon,
+  Lock as LockIcon, Menu,
 } from 'lucide-react';
 
 // Import local images for the community slider
@@ -38,6 +38,9 @@ const G = {
   blueBorder:'rgba(74,144,226,0.3)',
   darkSection:`linear-gradient(135deg, ${C.darkNavy}, #1a3e5c, ${C.blue})`,
 };
+
+// Helper function for responsive clamp values
+const clamp = (min, val, max) => Math.min(max, Math.max(min, val));
 
 /* ─── GLOBAL STYLES ─────────────────────────────────────────── */
 const GlobalStyles = () => (
@@ -90,7 +93,7 @@ const FloatingParticles = () => (
           left:`${(i*37)%100}%`, top:`${(i*53)%100}%`,
           width:Math.max(2,(i%5)+2), height:Math.max(2,(i%5)+2),
           borderRadius:'50%',
-          background:`${c}${.15+(i%4)*.08})`,
+          background:`${c}${0.15+(i%4)*0.08})`,
           animation:`floatUp ${8+(i%6)}s ease-in-out infinite`,
           animationDelay:`${-(i%8)}s`,
         }}/>
@@ -108,7 +111,7 @@ const Confetti = () => {
         <motion.div key={i}
           initial={{y:-20,x:`${(i*13)%100}vw`,rotate:0,opacity:1}}
           animate={{y:'105vh',rotate:360,opacity:0}}
-          transition={{duration:2.5+(i%3)*.5,delay:(i%12)*.08,ease:'easeOut'}}
+          transition={{duration:2.5+(i%3)*0.5,delay:(i%12)*0.08,ease:'easeOut'}}
           style={{
             position:'absolute',
             width:6+(i%8),height:6+(i%8),
@@ -137,18 +140,18 @@ const CategoryCard = ({category,isSelected,onSelect,index}) => {
   return (
     <motion.div
       initial={{opacity:0,y:40}} whileInView={{opacity:1,y:0}}
-      viewport={{once:true}} transition={{delay:index*.12,duration:.6}}
+      viewport={{once:true}} transition={{delay:index*0.12,duration:0.6}}
       className="cat-card"
       onClick={()=>onSelect(category.id)}
       style={{
-        padding:'28px 24px', borderRadius:24, cursor:'pointer',
+        padding:'clamp(20px, 4vw, 28px) clamp(16px, 4vw, 24px)', borderRadius:24, cursor:'pointer',
         background: isSelected
           ? `linear-gradient(135deg, ${category.color}18, rgba(255,255,255,0.82))`
           : G.glass65,
         border:`1.5px solid ${isSelected ? category.color : G.border60}`,
         boxShadow: isSelected
-          ? `0 20px 50px ${category.color}28, inset 0 1px 0 rgba(255,255,255,.9)`
-          : '0 8px 32px rgba(26,54,93,.06)',
+          ? `0 20px 50px ${category.color}28, inset 0 1px 0 rgba(255,255,255,0.9)`
+          : '0 8px 32px rgba(26,54,93,0.06)',
         position:'relative',
       }}>
       {isSelected && (
@@ -159,14 +162,14 @@ const CategoryCard = ({category,isSelected,onSelect,index}) => {
         </motion.div>
       )}
       <div style={{
-        width:60,height:60,borderRadius:18,
+        width: clamp(50, 60, 60), height: clamp(50, 60, 60), borderRadius:18,
         background:`${category.color}18`,
         display:'flex',alignItems:'center',justifyContent:'center',
-        marginBottom:18, boxShadow:`inset 0 1px 0 rgba(255,255,255,.5)`,
+        marginBottom:18, boxShadow:`inset 0 1px 0 rgba(255,255,255,0.5)`,
       }}>
-        <Icon size={28} style={{color:category.color}}/>
+        <Icon size={clamp(24, 28, 28)} style={{color:category.color}}/>
       </div>
-      <h3 style={{fontFamily:'Sora,sans-serif',fontSize:22,fontWeight:800,color:category.color,marginBottom:4}}>{category.title}</h3>
+      <h3 style={{fontFamily:'Sora,sans-serif',fontSize:clamp(18, 22, 22),fontWeight:800,color:category.color,marginBottom:4}}>{category.title}</h3>
       <p style={{fontSize:11,color:`rgba(26,54,93,0.5)`,fontWeight:700,letterSpacing:1,textTransform:'uppercase',marginBottom:10}}>{category.subtitle}</p>
       <p style={{fontSize:14,color:`rgba(26,54,93,0.7)`,lineHeight:1.65,marginBottom:18}}>{category.description}</p>
       <div style={{display:'flex',flexWrap:'wrap',gap:7,marginBottom:18}}>
@@ -186,7 +189,14 @@ const CategoryCard = ({category,isSelected,onSelect,index}) => {
 
 /* ─── MAIN ───────────────────────────────────────────────────── */
 export default function Home() {
-  const navigate = typeof useNavigate === 'function' ? useNavigate() : ()=>{};
+  const navigate = useNavigate();
+  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' ? window.innerWidth < 768 : false);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Mock context - replace with real useIkigai()
   const [selectedCategory, setSelectedCategory] = useState(null);
@@ -230,7 +240,7 @@ export default function Home() {
     let t;
     if (isAutoPlay) t = setInterval(()=>setCurrentSlide(p=>(p+1)%slides.length),4000);
     return ()=>clearInterval(t);
-  },[isAutoPlay]);
+  },[isAutoPlay, slides.length]);
 
   useEffect(()=>{
     const handler = (e)=>{
@@ -270,7 +280,6 @@ export default function Home() {
   const prevSlide=()=>{ setCurrentSlide(p=>(p-1+slides.length)%slides.length); pauseAuto(); };
   const pauseAuto=()=>{ setIsAutoPlay(false); setTimeout(()=>setIsAutoPlay(true),8000); };
 
-  /* ── inline helpers ── */
   const GlassTag = ({children}) => (
     <span style={{display:'inline-flex',alignItems:'center',gap:7,padding:'7px 16px',borderRadius:99,
       background:G.glass65,backdropFilter:'blur(12px)',
@@ -286,13 +295,24 @@ export default function Home() {
         border:`1px solid ${G.border60}`,
         borderRadius:99,padding:'7px 18px',marginBottom:18}}>
       <Icon size={14} style={{color:C.blue}}/>
-      <span style={{fontSize:12,fontWeight:700,color:C.darkNavy,letterSpacing:.4}}>{text}</span>
+      <span style={{fontSize:12,fontWeight:700,color:C.darkNavy,letterSpacing:0.4}}>{text}</span>
     </motion.div>
   );
 
-  const sectionHead = {fontFamily:'Sora,sans-serif',fontSize:'clamp(32px,5vw,52px)',fontWeight:900,
-    background:G.heading,WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',backgroundClip:'text',
-    letterSpacing:'-.02em',lineHeight:1.1};
+  const sectionHead = {
+    fontFamily:'Sora,sans-serif',
+    fontSize:'clamp(32px, 5vw, 52px)',
+    fontWeight:900,
+    background:G.heading,
+    WebkitBackgroundClip:'text',
+    WebkitTextFillColor:'transparent',
+    backgroundClip:'text',
+    letterSpacing:'-0.02em',
+    lineHeight:1.1
+  };
+
+  // Responsive margin: no left margin on mobile, 280px on desktop (for navbar)
+  const contentMarginLeft = isMobile ? 0 : '280px';
 
   /* ══════════════════════════════════════════════════════════ */
   return (
@@ -302,8 +322,8 @@ export default function Home() {
       <FloatingParticles/>
       {showConfetti && <Confetti/>}
 
-      {/* Add left padding to account for fixed navbar (280px width) */}
-      <div style={{marginLeft: '280px'}}>
+      {/* Main content with responsive left margin */}
+      <div style={{marginLeft: contentMarginLeft}}>
         {/* ── TOAST ── */}
         <AnimatePresence>
           {toast && (
@@ -324,10 +344,10 @@ export default function Home() {
               style={{position:'fixed',inset:0,zIndex:100,background:'rgba(26,54,93,0.55)',backdropFilter:'blur(10px)',
                 display:'flex',alignItems:'center',justifyContent:'center',padding:20}}
               onClick={()=>setShowExitPopup(false)}>
-              <motion.div initial={{scale:.9,y:20}} animate={{scale:1,y:0}} exit={{scale:.9,y:20}}
+              <motion.div initial={{scale:0.9,y:20}} animate={{scale:1,y:0}} exit={{scale:0.9,y:20}}
                 onClick={e=>e.stopPropagation()}
                 style={{background:G.glass80,backdropFilter:'blur(24px)',borderRadius:28,maxWidth:480,width:'100%',
-                  padding:'40px 32px',position:'relative',boxShadow:'0 24px 80px rgba(0,0,0,.2)',border:`1px solid ${G.border60}`}}>
+                  padding:'40px 32px',position:'relative',boxShadow:'0 24px 80px rgba(0,0,0,0.2)',border:`1px solid ${G.border60}`}}>
                 <button onClick={()=>setShowExitPopup(false)} style={{position:'absolute',top:14,right:14,background:'none',border:'none',cursor:'pointer'}}>
                   <X size={22} style={{color:`rgba(26,54,93,0.5)`}}/>
                 </button>
@@ -354,41 +374,48 @@ export default function Home() {
           )}
         </AnimatePresence>
 
-        {/* ══ 1. HERO ══════════════════════════════════════════════ */}
-        <section style={{position:'relative',padding:'120px 24px 80px',maxWidth:1300,margin:'0 auto',
-          display:'grid',gridTemplateColumns:'1fr 1fr',gap:48,alignItems:'center'}}>
+        {/* ══ 1. HERO (Responsive: column on mobile, row on desktop) ══════════════════ */}
+        <section style={{
+          position:'relative',padding: isMobile ? '80px 20px 60px' : '120px 24px 80px',
+          maxWidth:1200,margin:'0 auto',
+          display:'flex',flexDirection: isMobile ? 'column' : 'row',
+          gap: isMobile ? 32 : 48,
+          alignItems:'center'
+        }}>
           <div style={{position:'absolute',top:'10%',left:'-5%',width:280,height:280,borderRadius:'50%',
             background:`rgba(74,144,226,0.12)`,filter:'blur(60px)',pointerEvents:'none'}}/>
 
-          <motion.div initial={{opacity:0,x:-48}} animate={{opacity:1,x:0}} transition={{duration:.8}}>
-            <motion.div initial={{opacity:0,y:16}} animate={{opacity:1,y:0}} transition={{delay:.2}}
+          <motion.div initial={{opacity:0,x:-48}} animate={{opacity:1,x:0}} transition={{duration:0.8}}
+            style={{flex:1, textAlign: isMobile ? 'center' : 'left'}}>
+            <motion.div initial={{opacity:0,y:16}} animate={{opacity:1,y:0}} transition={{delay:0.2}}
               style={{display:'inline-flex',alignItems:'center',gap:8,background:G.glass80,backdropFilter:'blur(10px)',
-                padding:'7px 18px',borderRadius:99,marginBottom:24,border:`1px solid ${G.border60}`}}>
+                padding:'7px 18px',borderRadius:99,marginBottom:24,border:`1px solid ${G.border60}`,
+                marginLeft: isMobile ? 'auto' : 0, marginRight: isMobile ? 'auto' : 0}}>
               <span style={{width:8,height:8,borderRadius:'50%',background:C.lightBlue,animation:'pulseDot 2s infinite',display:'inline-block'}}/>
               <span style={{fontSize:13,fontWeight:700,color:C.darkNavy}}>🚀 Start in 2 mins • Free Access</span>
             </motion.div>
 
-            <motion.h1 initial={{opacity:0,y:20}} animate={{opacity:1,y:0}} transition={{delay:.3}}
-              style={{fontFamily:'Sora,sans-serif',fontSize:'clamp(36px,5vw,60px)',fontWeight:900,
-                color:C.darkNavy,lineHeight:1.08,marginBottom:20,letterSpacing:'-.03em'}}>
+            <motion.h1 initial={{opacity:0,y:20}} animate={{opacity:1,y:0}} transition={{delay:0.3}}
+              style={{fontFamily:'Sora,sans-serif',fontSize:'clamp(32px, 8vw, 60px)',fontWeight:900,
+                color:C.darkNavy,lineHeight:1.08,marginBottom:20,letterSpacing:'-0.03em'}}>
               You weren't meant to{' '}
               <span style={{color:C.blue,position:'relative',whiteSpace:'nowrap'}}>
                 live on repeat
-                <motion.svg style={{position:'absolute',bottom:-4,left:0,width:'100%',height:10,color:C.lightBlue,opacity:.6}}
+                <motion.svg style={{position:'absolute',bottom:-4,left:0,width:'100%',height:10,color:C.lightBlue,opacity:0.6}}
                   viewBox="0 0 100 10" preserveAspectRatio="none"
-                  initial={{pathLength:0}} animate={{pathLength:1}} transition={{duration:1.2,delay:.9}}>
+                  initial={{pathLength:0}} animate={{pathLength:1}} transition={{duration:1.2,delay:0.9}}>
                   <path d="M0 5 Q 50 15 100 5" stroke="currentColor" strokeWidth="4" fill="transparent"/>
                 </motion.svg>
               </span>
             </motion.h1>
 
-            <motion.p initial={{opacity:0}} animate={{opacity:1}} transition={{delay:.5}}
-              style={{fontSize:17,color:`rgba(26,54,93,0.75)`,lineHeight:1.75,marginBottom:32,maxWidth:480}}>
+            <motion.p initial={{opacity:0}} animate={{opacity:1}} transition={{delay:0.5}}
+              style={{fontSize:'clamp(15px, 4vw, 17px)',color:`rgba(26,54,93,0.75)`,lineHeight:1.75,marginBottom:32,maxWidth:isMobile?'100%':480}}>
               Break the 9-5 cycle. Build location-independent income. Join a global community of modern explorers redesigning their lives.
             </motion.p>
 
-            <motion.div initial={{opacity:0,y:16}} animate={{opacity:1,y:0}} transition={{delay:.6}}
-              style={{display:'flex',gap:14,flexWrap:'wrap',marginBottom:24}}>
+            <motion.div initial={{opacity:0,y:16}} animate={{opacity:1,y:0}} transition={{delay:0.6}}
+              style={{display:'flex',gap:14,flexWrap:'wrap',marginBottom:24, justifyContent: isMobile ? 'center' : 'flex-start'}}>
               <button className="btn-primary" onClick={scrollToOnboarding}
                 style={{display:'flex',alignItems:'center',gap:8,padding:'14px 28px',borderRadius:12,border:'none',
                   background:G.btn,color:'#fff',fontFamily:'Sora,sans-serif',fontWeight:800,fontSize:16,
@@ -404,8 +431,8 @@ export default function Home() {
               </button>
             </motion.div>
 
-            <motion.div initial={{opacity:0}} animate={{opacity:1}} transition={{delay:.8}}
-              style={{display:'flex',gap:20,flexWrap:'wrap'}}>
+            <motion.div initial={{opacity:0}} animate={{opacity:1}} transition={{delay:0.8}}
+              style={{display:'flex',gap:20,flexWrap:'wrap', justifyContent: isMobile ? 'center' : 'flex-start'}}>
               {['No credit card','14-day guarantee'].map(l=>(
                 <span key={l} style={{display:'flex',alignItems:'center',gap:6,fontSize:13,color:`rgba(26,54,93,0.6)`}}>
                   <CheckCircle size={14} style={{color:C.lightBlue}}/> {l}
@@ -414,23 +441,23 @@ export default function Home() {
             </motion.div>
           </motion.div>
 
-          <motion.div initial={{opacity:0,scale:.9}} animate={{opacity:1,scale:1}} transition={{duration:.8,delay:.2}}
-            style={{position:'relative'}}>
+          <motion.div initial={{opacity:0,scale:0.9}} animate={{opacity:1,scale:1}} transition={{duration:0.8,delay:0.2}}
+            style={{flex:1, position:'relative', width:'100%'}}>
             <div style={{position:'absolute',inset:0,borderRadius:28,background:'linear-gradient(to top right,rgba(26,54,93,0.15),rgba(74,144,226,0.15))',zIndex:1}}/>
             <img src="https://images.unsplash.com/photo-1552733407-5d5c46c3bb3b?w=800&q=80" alt="Nomad"
-              style={{borderRadius:28,width:'100%',height:480,objectFit:'cover',
+              style={{borderRadius:28,width:'100%',height: isMobile ? 300 : 480,objectFit:'cover',
                 boxShadow:'0 24px 80px rgba(26,54,93,0.2)',border:'4px solid rgba(255,255,255,0.7)'}}/>
           </motion.div>
         </section>
 
-        {/* ══ 2. CATEGORY CARDS ════════════════════════════════════ */}
-        <section style={{padding:'80px 24px',maxWidth:1200,margin:'0 auto'}}>
+        {/* ══ 2. CATEGORY CARDS (Responsive grid) ════════════════════════════════════ */}
+        <section style={{padding:'clamp(40px, 8vw, 80px) 20px',maxWidth:1200,margin:'0 auto'}}>
           <div style={{textAlign:'center',marginBottom:56}}>
             <SectionBadge icon={Sparkles} text="Discover Your Purpose"/>
             <motion.h2 initial={{opacity:0,y:20}} whileInView={{opacity:1,y:0}} viewport={{once:true}}
               style={{...sectionHead,marginBottom:16}}>Find Your Ikigai</motion.h2>
             <motion.p initial={{opacity:0}} whileInView={{opacity:1}} viewport={{once:true}}
-              style={{fontSize:17,color:`rgba(26,54,93,0.65)`,maxWidth:560,margin:'0 auto 24px',lineHeight:1.75}}>
+              style={{fontSize:'clamp(15px, 4vw, 17px)',color:`rgba(26,54,93,0.65)`,maxWidth:560,margin:'0 auto 24px',lineHeight:1.75}}>
               Embark on a transformative 7-day journey to discover what you love, what you're good at,
               what the world needs, and what you can be paid for.
             </motion.p>
@@ -441,7 +468,7 @@ export default function Home() {
               ))}
             </motion.div>
           </div>
-          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(280px,1fr))',gap:24}}>
+          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill, minmax(280px, 1fr))',gap:24}}>
             {categories.map((cat,i)=>(
               <CategoryCard key={cat.id} category={cat} index={i}
                 isSelected={selectedCategory===cat.id} onSelect={handleCategorySelect}/>
@@ -449,15 +476,15 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ══ 3. HOW IT WORKS (SIMPLE) ═════════════════════════════ */}
-        <section style={{padding:'80px 24px',maxWidth:1200,margin:'0 auto'}}>
+        {/* ══ 3. HOW IT WORKS (Responsive grid) ════════════════════════════════════ */}
+        <section style={{padding:'clamp(40px, 8vw, 80px) 20px',maxWidth:1200,margin:'0 auto'}}>
           <div style={{textAlign:'center',marginBottom:48}}>
             <SectionBadge icon={Compass} text="Simple & Structured"/>
             <motion.h2 initial={{opacity:0,y:20}} whileInView={{opacity:1,y:0}} viewport={{once:true}}
               style={{...sectionHead,marginBottom:14}}>How It Works</motion.h2>
-            <p style={{fontSize:17,color:`rgba(26,54,93,0.6)`}}>A simple, structured journey to discover your Ikigai in 7 days</p>
+            <p style={{fontSize:'clamp(15px, 4vw, 17px)',color:`rgba(26,54,93,0.6)`}}>A simple, structured journey to discover your Ikigai in 7 days</p>
           </div>
-          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(200px,1fr))',gap:18,position:'relative'}}>
+          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill, minmax(180px, 1fr))',gap:18,position:'relative'}}>
             <div style={{position:'absolute',top:40,left:'10%',right:'10%',height:1,
               background:`linear-gradient(to right, transparent, rgba(74,144,226,0.4), transparent)`}}/>
             {[
@@ -467,15 +494,15 @@ export default function Home() {
               {step:'04',title:'Take Action',  desc:'Start your journey',      icon:Zap,     color:C.blue},
             ].map((item,i)=>(
               <motion.div key={i} className="hover-lift"
-                initial={{opacity:0,y:28}} whileInView={{opacity:1,y:0}} viewport={{once:true}} transition={{delay:i*.12}}
+                initial={{opacity:0,y:28}} whileInView={{opacity:1,y:0}} viewport={{once:true}} transition={{delay:i*0.12}}
                 style={{background:G.glass65,backdropFilter:'blur(16px)',border:`1px solid ${G.border60}`,
-                  borderRadius:20,padding:'28px 20px',textAlign:'center',position:'relative',
+                  borderRadius:20,padding:'clamp(20px, 4vw, 28px) 20px',textAlign:'center',position:'relative',
                   boxShadow:'0 4px 20px rgba(26,54,93,0.06)'}}>
                 <div style={{position:'absolute',top:12,right:12,fontSize:28,fontWeight:900,
-                  color:item.color,opacity:.15,fontFamily:'Sora,sans-serif'}}>{item.step}</div>
+                  color:item.color,opacity:0.15,fontFamily:'Sora,sans-serif'}}>{item.step}</div>
                 <div style={{width:64,height:64,borderRadius:18,background:`${item.color}18`,
                   display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 18px',
-                  boxShadow:`inset 0 1px 0 rgba(255,255,255,.5)`}}>
+                  boxShadow:`inset 0 1px 0 rgba(255,255,255,0.5)`}}>
                   <item.icon size={28} style={{color:item.color}}/>
                 </div>
                 <h3 style={{fontFamily:'Sora,sans-serif',fontWeight:800,fontSize:16,color:C.darkNavy,marginBottom:6}}>{item.title}</h3>
@@ -485,8 +512,8 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ══ 4. ONBOARDING QUIZ ════════════════════════════════════ */}
-        <section id="onboarding" style={{padding:'80px 24px'}}>
+        {/* ══ 4. ONBOARDING QUIZ (Responsive padding) ════════════════════════════════ */}
+        <section id="onboarding" style={{padding:'clamp(40px, 8vw, 80px) 20px'}}>
           <div style={{maxWidth:820,margin:'0 auto'}}>
             <div style={{textAlign:'center',marginBottom:40}}>
               <SectionBadge icon={Lightbulb} text="Quick Quiz"/>
@@ -495,9 +522,9 @@ export default function Home() {
               <p style={{fontSize:16,color:`rgba(26,54,93,0.65)`}}>Takes less than 60 seconds • Personalized roadmap</p>
             </div>
 
-            <Glass style={{borderRadius:28,padding:'40px 36px',boxShadow:'0 20px 60px rgba(26,54,93,0.12)',position:'relative',overflow:'hidden'}}>
+            <Glass style={{borderRadius:28,padding: isMobile ? '24px 20px' : '40px 36px',boxShadow:'0 20px 60px rgba(26,54,93,0.12)',position:'relative',overflow:'hidden'}}>
               <div style={{position:'absolute',top:-60,right:-60,width:220,height:220,borderRadius:'50%',
-                background:`radial-gradient(circle,rgba(74,144,226,0.25),transparent 70%)`,pointerEvents:'none'}}/>
+                background:`radial-gradient(circle, rgba(74,144,226,0.25), transparent 70%)`,pointerEvents:'none'}}/>
 
               <AnimatePresence mode="wait">
                 {onboardingStep<4 && (
@@ -508,7 +535,7 @@ export default function Home() {
                       <span>{Math.round((onboardingStep/3)*100)}%</span>
                     </div>
                     <div style={{height:8,borderRadius:99,background:'rgba(255,255,255,0.5)',overflow:'hidden'}}>
-                      <motion.div initial={{width:0}} animate={{width:`${(onboardingStep/3)*100}%`}} transition={{duration:.7}}
+                      <motion.div initial={{width:0}} animate={{width:`${(onboardingStep/3)*100}%`}} transition={{duration:0.7}}
                         style={{height:'100%',borderRadius:99,background:`linear-gradient(to right,${C.lightBlue},${C.blue},${C.darkNavy})`}}/>
                     </div>
                   </motion.div>
@@ -516,20 +543,20 @@ export default function Home() {
 
                 {onboardingStep===1 && (
                   <motion.div key="s1" initial={{opacity:0,x:48}} animate={{opacity:1,x:0}} exit={{opacity:0,x:-48}}>
-                    <h3 style={{fontFamily:'Sora,sans-serif',fontSize:24,fontWeight:800,color:C.darkNavy,textAlign:'center',marginBottom:28}}>
+                    <h3 style={{fontFamily:'Sora,sans-serif',fontSize:'clamp(20px, 5vw, 24px)',fontWeight:800,color:C.darkNavy,textAlign:'center',marginBottom:28}}>
                       What's pulling you towards change?
                     </h3>
-                    <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(180px,1fr))',gap:16}}>
+                    <div style={{display:'grid',gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(180px, 1fr))',gap:16}}>
                       {[{id:'escape',icon:Briefcase,title:'Escape 9–5',desc:'Break the corporate chains',color:C.darkNavy},
                         {id:'income',icon:DollarSign,title:'Build Income',desc:'Create financial freedom',color:C.blue},
                         {id:'travel',icon:Globe,title:'Travel Lifestyle',desc:'Work from anywhere',color:C.lightBlue}].map((item,idx)=>(
-                        <motion.button key={item.id} initial={{opacity:0,y:18}} animate={{opacity:1,y:0}} transition={{delay:idx*.1}}
+                        <motion.button key={item.id} initial={{opacity:0,y:18}} animate={{opacity:1,y:0}} transition={{delay:idx*0.1}}
                           onClick={()=>handleOnboardingSelect('pull',item.id)}
                           style={{
                             padding:'24px 18px',borderRadius:20,textAlign:'left',cursor:'pointer',border:'none',
-                            background: onboardingData.pull===item.id ? `linear-gradient(135deg,${item.color}18,rgba(255,255,255,.9))` : G.glass65,
+                            background: onboardingData.pull===item.id ? `linear-gradient(135deg,${item.color}18,rgba(255,255,255,0.9))` : G.glass65,
                             outline: onboardingData.pull===item.id ? `2px solid ${item.color}` : `1.5px solid ${G.border60}`,
-                            boxShadow: onboardingData.pull===item.id ? `0 16px 40px ${item.color}20` : '0 4px 16px rgba(0,0,0,.04)',
+                            boxShadow: onboardingData.pull===item.id ? `0 16px 40px ${item.color}20` : '0 4px 16px rgba(0,0,0,0.04)',
                             transition:'all .3s ease',
                           }}>
                           <div style={{width:48,height:48,borderRadius:14,background:`${item.color}18`,
@@ -546,17 +573,17 @@ export default function Home() {
 
                 {onboardingStep===2 && (
                   <motion.div key="s2" initial={{opacity:0,x:48}} animate={{opacity:1,x:0}} exit={{opacity:0,x:-48}}>
-                    <h3 style={{fontFamily:'Sora,sans-serif',fontSize:24,fontWeight:800,color:C.darkNavy,textAlign:'center',marginBottom:28}}>
+                    <h3 style={{fontFamily:'Sora,sans-serif',fontSize:'clamp(20px, 5vw, 24px)',fontWeight:800,color:C.darkNavy,textAlign:'center',marginBottom:28}}>
                       Where are you starting from?
                     </h3>
-                    <div style={{display:'flex',gap:20,justifyContent:'center',flexWrap:'wrap'}}>
+                    <div style={{display:'flex',gap:20,justifyContent:'center',flexDirection: isMobile ? 'column' : 'row', alignItems:'center'}}>
                       {[{id:'beginner',title:'Beginner',desc:'No online income yet',icon:Target},
                         {id:'intermediate',title:'Intermediate',desc:'Already making some $$ online',icon:Rocket}].map((item,idx)=>(
-                        <motion.button key={item.id} initial={{opacity:0,y:18}} animate={{opacity:1,y:0}} transition={{delay:idx*.1}}
+                        <motion.button key={item.id} initial={{opacity:0,y:18}} animate={{opacity:1,y:0}} transition={{delay:idx*0.1}}
                           onClick={()=>handleOnboardingSelect('level',item.id)}
                           style={{
                             padding:'32px 28px',borderRadius:20,textAlign:'center',cursor:'pointer',border:'none',
-                            flex:'1',minWidth:180,maxWidth:260,
+                            flex:'1',minWidth:180,maxWidth: isMobile ? '100%' : 260,
                             background: onboardingData.level===item.id ? `linear-gradient(135deg,rgba(74,144,226,0.15),rgba(255,255,255,0.9))` : G.glass65,
                             outline: onboardingData.level===item.id ? `2px solid ${C.lightBlue}` : `1.5px solid ${G.border60}`,
                             transition:'all .3s ease',
@@ -575,19 +602,19 @@ export default function Home() {
 
                 {onboardingStep===3 && (
                   <motion.div key="s3" initial={{opacity:0,x:48}} animate={{opacity:1,x:0}} exit={{opacity:0,x:-48}}>
-                    <h3 style={{fontFamily:'Sora,sans-serif',fontSize:24,fontWeight:800,color:C.darkNavy,textAlign:'center',marginBottom:28}}>
+                    <h3 style={{fontFamily:'Sora,sans-serif',fontSize:'clamp(20px, 5vw, 24px)',fontWeight:800,color:C.darkNavy,textAlign:'center',marginBottom:28}}>
                       How fast do you want to transform?
                     </h3>
-                    <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(160px,1fr))',gap:16}}>
+                    <div style={{display:'grid',gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(160px, 1fr))',gap:16}}>
                       {[{id:'7',title:'7 Days',badge:'Clarity Seeker',color:C.lightBlue,available:true},
                         {id:'30',title:'30 Days',badge:'Income Builder',color:C.blue,available:false},
                         {id:'60',title:'60 Days',badge:'Nomad Starter',color:C.darkNavy,available:false}].map((item,idx)=>(
-                        <motion.button key={item.id} initial={{opacity:0,y:18}} animate={{opacity:1,y:0}} transition={{delay:idx*.1}}
+                        <motion.button key={item.id} initial={{opacity:0,y:18}} animate={{opacity:1,y:0}} transition={{delay:idx*0.1}}
                           onClick={()=>item.available&&handleOnboardingSelect('speed',item.id)}
                           disabled={!item.available}
                           style={{
                             padding:'24px 16px',borderRadius:20,textAlign:'center',cursor:item.available?'pointer':'not-allowed',
-                            border:'none',opacity:item.available?1:.55,position:'relative',
+                            border:'none',opacity:item.available?1:0.55,position:'relative',
                             background: onboardingData.speed===item.id
                               ? `linear-gradient(135deg,${item.color},${item.color}cc)` : G.glass65,
                             outline: onboardingData.speed===item.id ? `2px solid ${item.color}` : `1.5px solid ${G.border60}`,
@@ -606,13 +633,13 @@ export default function Home() {
                 )}
 
                 {onboardingStep===4 && (
-                  <motion.div key="s4" initial={{opacity:0,scale:.88}} animate={{opacity:1,scale:1}} style={{textAlign:'center'}}>
-                    <motion.div initial={{scale:0}} animate={{scale:1}} transition={{type:'spring',delay:.2}}
+                  <motion.div key="s4" initial={{opacity:0,scale:0.88}} animate={{opacity:1,scale:1}} style={{textAlign:'center'}}>
+                    <motion.div initial={{scale:0}} animate={{scale:1}} transition={{type:'spring',delay:0.2}}
                       style={{width:88,height:88,borderRadius:'50%',background:'rgba(34,197,94,0.12)',
                         display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 20px'}}>
                       <CheckCircle size={44} style={{color:'rgb(34,197,94)'}}/>
                     </motion.div>
-                    <h3 style={{fontFamily:'Sora,sans-serif',fontSize:30,fontWeight:900,color:C.darkNavy,marginBottom:10}}>
+                    <h3 style={{fontFamily:'Sora,sans-serif',fontSize:'clamp(24px, 6vw, 30px)',fontWeight:900,color:C.darkNavy,marginBottom:10}}>
                       Your Path is Ready! 🎉
                     </h3>
                     <p style={{fontSize:16,color:`rgba(26,54,93,0.65)`,marginBottom:28}}>
@@ -638,41 +665,41 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ══ 5. PROGRAMS ══════════════════════════════════════════ */}
-        <section style={{padding:'80px 24px',maxWidth:1200,margin:'0 auto'}}>
+        {/* ══ 5. PROGRAMS (Responsive grid) ══════════════════════════════════════════ */}
+        <section style={{padding:'clamp(40px, 8vw, 80px) 20px',maxWidth:1200,margin:'0 auto'}}>
           <div style={{textAlign:'center',marginBottom:48}}>
             <SectionBadge icon={Award} text="Premium Programs"/>
             <motion.h2 initial={{opacity:0,y:20}} whileInView={{opacity:1,y:0}} viewport={{once:true}}
               style={{...sectionHead,marginBottom:16}}>Choose Your Transformation</motion.h2>
-            <p style={{fontSize:17,color:`rgba(26,54,93,0.65)`}}>Structured paths designed to get you from stuck to completely free.</p>
+            <p style={{fontSize:'clamp(15px, 4vw, 17px)',color:`rgba(26,54,93,0.65)`}}>Structured paths designed to get you from stuck to completely free.</p>
           </div>
-          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(280px,1fr))',gap:24}}>
+          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill, minmax(280px, 1fr))',gap:24}}>
             {[
               {title:'Nomad Starter Kit',duration:'7 Days',desc:'Find your profitable skill and map your exit strategy.',outcome:'Crystal clear clarity.',icon:MapPin,color:C.lightBlue,locked:false},
               {title:'Income Engine',    duration:'30 Days',desc:'Land your first online client or launch your digital product.',outcome:'First ₹1k online.',icon:TrendingUp,color:C.blue,locked:true},
               {title:'Freedom Mastermind',duration:'60 Days',desc:'Scale to consistent 5k/mo and optimize taxes & travel.',outcome:'Full independence.',icon:Globe,color:C.darkNavy,locked:true},
             ].map((prog,i)=>(
               <motion.div key={i} className="hover-lift"
-                initial={{opacity:0,y:28}} whileInView={{opacity:1,y:0}} viewport={{once:true}} transition={{delay:i*.12}}
+                initial={{opacity:0,y:28}} whileInView={{opacity:1,y:0}} viewport={{once:true}} transition={{delay:i*0.12}}
                 style={{background:G.glass65,backdropFilter:'blur(20px)',border:`1px solid ${G.border60}`,
-                  borderRadius:24,padding:'32px 28px',position:'relative',boxShadow:'0 8px 32px rgba(26,54,93,0.07)'}}>
+                  borderRadius:24,padding:'clamp(24px, 4vw, 32px) clamp(20px, 4vw, 28px)',position:'relative',boxShadow:'0 8px 32px rgba(26,54,93,0.07)'}}>
                 {prog.locked && (
                   <div style={{position:'absolute',top:14,right:14,width:34,height:34,borderRadius:10,
                     background:'rgba(234,179,8,0.15)',display:'flex',alignItems:'center',justifyContent:'center'}}>
                     <LockIcon size={15} style={{color:'rgb(202,138,4)'}}/>
                   </div>
                 )}
-                <div style={{width:64,height:64,borderRadius:18,background:`${prog.color}18`,
+                <div style={{width:'clamp(56px, 10vw, 64px)',height:'clamp(56px, 10vw, 64px)',borderRadius:18,background:`${prog.color}18`,
                   display:'flex',alignItems:'center',justifyContent:'center',marginBottom:18}}>
-                  <prog.icon size={28} style={{color:prog.color}}/>
+                  <prog.icon size={clamp(24, 28, 28)} style={{color:prog.color}}/>
                 </div>
                 <span style={{fontSize:10,fontWeight:800,letterSpacing:2,textTransform:'uppercase',
                   color:C.lightBlue,background:`rgba(74,144,226,0.12)`,padding:'3px 12px',borderRadius:99,
                   display:'inline-block',marginBottom:14}}>{prog.duration}</span>
-                <h3 style={{fontFamily:'Sora,sans-serif',fontSize:20,fontWeight:800,color:C.darkNavy,marginBottom:10}}>{prog.title}</h3>
+                <h3 style={{fontFamily:'Sora,sans-serif',fontSize:'clamp(18px, 4vw, 20px)',fontWeight:800,color:C.darkNavy,marginBottom:10}}>{prog.title}</h3>
                 <p style={{fontSize:14,color:`rgba(26,54,93,0.7)`,lineHeight:1.65,marginBottom:18,minHeight:56}}>{prog.desc}</p>
                 <div style={{padding:'10px 14px',borderRadius:12,
-                  background:'linear-gradient(to right,rgba(214,239,255,0.5),rgba(185,226,255,0.3))',
+                  background:'linear-gradient(to right, rgba(214,239,255,0.5), rgba(185,226,255,0.3))',
                   border:`1px solid rgba(255,255,255,0.6)`,marginBottom:22}}>
                   <span style={{fontSize:10,fontWeight:800,color:`rgba(26,54,93,0.5)`,textTransform:'uppercase',letterSpacing:1,display:'block',marginBottom:3}}>Outcome</span>
                   <span style={{fontFamily:'Sora,sans-serif',fontWeight:800,color:C.darkNavy,fontSize:14}}>{prog.outcome}</span>
@@ -690,8 +717,8 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ══ 6. DARK STORY SECTION ════════════════════════════════ */}
-        <section style={{background:G.darkSection,color:'#fff',padding:'100px 24px',position:'relative',overflow:'hidden'}}>
+        {/* ══ 6. DARK STORY SECTION (Responsive padding) ════════════════════════════════ */}
+        <section style={{background:G.darkSection,color:'#fff',padding:'clamp(60px, 10vw, 100px) 20px',position:'relative',overflow:'hidden'}}>
           <div style={{position:'absolute',top:0,right:0,width:400,height:400,background:`rgba(74,144,226,0.2)`,filter:'blur(120px)',pointerEvents:'none'}}/>
           <div style={{position:'absolute',bottom:0,left:0,width:400,height:400,background:`rgba(185,226,255,0.1)`,filter:'blur(120px)',pointerEvents:'none'}}/>
           <div style={{maxWidth:800,margin:'0 auto',position:'relative',zIndex:1}}>
@@ -707,9 +734,9 @@ export default function Home() {
                   <span style={{width:6,height:6,borderRadius:'50%',background:C.lightBlue,display:'inline-block'}}/>
                   <span style={{fontSize:11,fontWeight:800,letterSpacing:1.5,textTransform:'uppercase',color:C.lightBlue}}>{block.badge}</span>
                 </div>
-                <h3 style={{fontFamily:'Sora,sans-serif',fontSize:'clamp(22px,3.5vw,36px)',fontWeight:900,marginBottom:14,lineHeight:1.15}}>{block.head}</h3>
-                <p style={{fontSize:16,color:'rgba(255,255,255,0.75)',lineHeight:1.75}}>{block.body}</p>
-                {i<2 && <div style={{width:1,height:48,background:'linear-gradient(to bottom,rgba(255,255,255,0.25),transparent)',margin:'32px 0 0 8px'}}/>}
+                <h3 style={{fontFamily:'Sora,sans-serif',fontSize:'clamp(22px, 5vw, 36px)',fontWeight:900,marginBottom:14,lineHeight:1.15}}>{block.head}</h3>
+                <p style={{fontSize:'clamp(14px, 3.5vw, 16px)',color:'rgba(255,255,255,0.75)',lineHeight:1.75}}>{block.body}</p>
+                {i<2 && <div style={{width:1,height:48,background:'linear-gradient(to bottom, rgba(255,255,255,0.25), transparent)',margin:'32px 0 0 8px'}}/>}
               </div>
             ))}
             <button className="btn-primary" onClick={scrollToOnboarding}
@@ -722,15 +749,15 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ══ 7. COMMUNITY SLIDER ══════════════════════════════════ */}
-        <section style={{padding:'80px 24px',maxWidth:1200,margin:'0 auto'}}>
+        {/* ══ 7. COMMUNITY SLIDER (Responsive) ══════════════════════════════════════ */}
+        <section style={{padding:'clamp(40px, 8vw, 80px) 20px',maxWidth:1200,margin:'0 auto'}}>
           <div style={{textAlign:'center',marginBottom:40}}>
             <SectionBadge icon={Users} text="Global Community"/>
             <motion.h2 initial={{opacity:0,y:20}} whileInView={{opacity:1,y:0}} viewport={{once:true}}
               style={{...sectionHead,marginBottom:14}}>Our Community in Action</motion.h2>
           </div>
-          <Glass style={{borderRadius:24,padding:24,boxShadow:'0 16px 56px rgba(26,54,93,0.12)'}}>
-            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:18}}>
+          <Glass style={{borderRadius:24,padding: isMobile ? 16 : 24,boxShadow:'0 16px 56px rgba(26,54,93,0.12)'}}>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:18, flexWrap:'wrap', gap:10}}>
               <h4 style={{fontFamily:'Sora,sans-serif',fontWeight:700,fontSize:16,color:C.darkNavy}}>🌍 Community Moments</h4>
               <button onClick={()=>setIsAutoPlay(p=>!p)}
                 style={{display:'flex',alignItems:'center',gap:7,padding:'7px 16px',borderRadius:10,
@@ -742,24 +769,24 @@ export default function Home() {
             <div style={{position:'relative',borderRadius:16,overflow:'hidden'}}>
               <button onClick={prevSlide}
                 style={{position:'absolute',left:10,top:'50%',transform:'translateY(-50%)',zIndex:10,
-                  background:'rgba(255,255,255,0.9)',border:'none',borderRadius:'50%',width:42,height:42,
+                  background:'rgba(255,255,255,0.9)',border:'none',borderRadius:'50%',width:36,height:36,
                   display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',
                   boxShadow:'0 4px 16px rgba(0,0,0,0.12)'}}>
-                <ChevronLeft size={20} style={{color:C.darkNavy}}/>
+                <ChevronLeft size={18} style={{color:C.darkNavy}}/>
               </button>
               <div style={{display:'flex',transition:'transform .7s ease',transform:`translateX(-${currentSlide*100}%)`}}>
                 {slides.map(s=>(
                   <div key={s.id} style={{flexShrink:0,width:'100%',position:'relative'}}>
-                    <img src={s.img} alt={s.title} style={{width:'100%',height:420,objectFit:'cover'}}/>
+                    <img src={s.img} alt={s.title} style={{width:'100%',height: isMobile ? 280 : 420,objectFit:'cover'}}/>
                     <div style={{position:'absolute',inset:0,background:'linear-gradient(to top, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.1) 60%, transparent 100%)'}}>
-                      <div style={{position:'absolute',bottom:0,left:0,right:0,padding:'28px 24px'}}>
+                      <div style={{position:'absolute',bottom:0,left:0,right:0,padding: isMobile ? '16px 20px' : '28px 24px'}}>
                         <div style={{display:'inline-flex',alignItems:'center',gap:6,
                           background:'rgba(255,255,255,0.2)',backdropFilter:'blur(8px)',
                           borderRadius:99,padding:'4px 12px',marginBottom:10}}>
                           <MapPin size={12} style={{color:'#fff'}}/>
                           <span style={{color:'#fff',fontSize:12}}>{s.location}</span>
                         </div>
-                        <h4 style={{color:'#fff',fontFamily:'Sora,sans-serif',fontWeight:800,fontSize:22}}>{s.title}</h4>
+                        <h4 style={{color:'#fff',fontFamily:'Sora,sans-serif',fontWeight:800,fontSize: isMobile ? 18 : 22}}>{s.title}</h4>
                       </div>
                     </div>
                   </div>
@@ -767,10 +794,10 @@ export default function Home() {
               </div>
               <button onClick={nextSlide}
                 style={{position:'absolute',right:10,top:'50%',transform:'translateY(-50%)',zIndex:10,
-                  background:'rgba(255,255,255,0.9)',border:'none',borderRadius:'50%',width:42,height:42,
+                  background:'rgba(255,255,255,0.9)',border:'none',borderRadius:'50%',width:36,height:36,
                   display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',
                   boxShadow:'0 4px 16px rgba(0,0,0,0.12)'}}>
-                <ChevronRight size={20} style={{color:C.darkNavy}}/>
+                <ChevronRight size={18} style={{color:C.darkNavy}}/>
               </button>
             </div>
             <div style={{display:'flex',justifyContent:'center',gap:10,marginTop:16}}>
@@ -783,8 +810,8 @@ export default function Home() {
           </Glass>
         </section>
 
-        {/* ══ 8. FINAL CTA ═════════════════════════════════════════ */}
-        <section style={{padding:'100px 24px',background:G.darkSection,position:'relative',overflow:'hidden',textAlign:'center'}}>
+        {/* ══ 8. FINAL CTA (Responsive) ═════════════════════════════════════════ */}
+        <section style={{padding:'clamp(60px, 10vw, 100px) 20px',background:G.darkSection,position:'relative',overflow:'hidden',textAlign:'center'}}>
           <div style={{position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-50%)',
             width:700,height:700,borderRadius:'50%',background:`rgba(74,144,226,0.18)`,filter:'blur(100px)',pointerEvents:'none'}}/>
           <div style={{maxWidth:700,margin:'0 auto',position:'relative',zIndex:1}}>
@@ -794,37 +821,37 @@ export default function Home() {
                 border:'1px solid rgba(255,255,255,0.2)',borderRadius:99,
                 padding:'7px 18px',marginBottom:28}}>
               <Sparkles size={13} style={{color:C.lightBlue}}/>
-              <span style={{fontSize:12,fontWeight:700,color:'#fff',letterSpacing:.4}}>Your Moment is Now</span>
+              <span style={{fontSize:12,fontWeight:700,color:'#fff',letterSpacing:0.4}}>Your Moment is Now</span>
             </motion.div>
             <motion.h2 initial={{opacity:0,y:24}} whileInView={{opacity:1,y:0}} viewport={{once:true}}
-              style={{fontFamily:'Sora,sans-serif',fontSize:'clamp(32px,5vw,60px)',fontWeight:900,
-                color:'#fff',lineHeight:1.06,letterSpacing:'-.03em',marginBottom:20}}>
+              style={{fontFamily:'Sora,sans-serif',fontSize:'clamp(32px, 6vw, 60px)',fontWeight:900,
+                color:'#fff',lineHeight:1.06,letterSpacing:'-0.03em',marginBottom:20}}>
               A year from now, you'll wish you started{' '}
               <span style={{color:C.lightBlue}}>today.</span>
             </motion.h2>
-            <p style={{fontSize:18,color:'rgba(255,255,255,0.75)',marginBottom:36,lineHeight:1.75}}>
+            <p style={{fontSize:'clamp(16px, 4vw, 18px)',color:'rgba(255,255,255,0.75)',marginBottom:36,lineHeight:1.75}}>
               The time will pass anyway. You can either be in the same chair, or sitting on a beach designing your own day.
             </p>
             <button className="btn-primary" onClick={scrollToOnboarding}
-              style={{display:'inline-flex',alignItems:'center',gap:10,padding:'16px 36px',borderRadius:16,border:'none',
+              style={{display:'inline-flex',alignItems:'center',gap:10,padding:'clamp(14px, 3vw, 16px) clamp(28px, 5vw, 36px)',borderRadius:16,border:'none',
                 background:`linear-gradient(to right,${C.lightBlue},${C.blue})`,color:'#fff',
-                fontFamily:'Sora,sans-serif',fontWeight:900,fontSize:18,cursor:'pointer',
+                fontFamily:'Sora,sans-serif',fontWeight:900,fontSize:'clamp(16px, 3.5vw, 18px)',cursor:'pointer',
                 boxShadow:'0 12px 40px rgba(74,144,226,0.5)'}}>
               Start Your Journey <ArrowRight size={20}/>
             </button>
-            <p style={{marginTop:20,fontSize:13,color:'rgba(255,255,255,0.5)',display:'flex',alignItems:'center',justifyContent:'center',gap:7}}>
+            <p style={{marginTop:20,fontSize:13,color:'rgba(255,255,255,0.5)',display:'flex',alignItems:'center',justifyContent:'center',gap:7,flexWrap:'wrap'}}>
               <Shield size={13}/> 14-Day Money Back Guarantee • Cancel Anytime
             </p>
           </div>
         </section>
 
-        {/* ══ FOOTER ═══════════════════════════════════════════════ */}
-        <footer style={{padding:'64px 24px 32px',borderTop:`1px solid rgba(255,255,255,0.3)`,position:'relative',overflow:'hidden'}}>
+        {/* ══ FOOTER (Responsive grid) ═══════════════════════════════════════════════ */}
+        <footer style={{padding:'clamp(40px, 8vw, 64px) 20px clamp(24px, 5vw, 32px)',borderTop:`1px solid rgba(255,255,255,0.3)`,position:'relative',overflow:'hidden'}}>
           <div style={{position:'absolute',inset:0,background:'rgba(255,255,255,0.5)',backdropFilter:'blur(20px)'}}/>
           <div style={{position:'relative',zIndex:1,maxWidth:1200,margin:'0 auto'}}>
-            <div style={{display:'grid',gridTemplateColumns:'2fr 1fr 1fr 1fr',gap:32,marginBottom:40}}>
+            <div style={{display:'grid',gridTemplateColumns: isMobile ? '1fr' : '2fr 1fr 1fr 1fr',gap:32,marginBottom:40}}>
               <div>
-                <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:16}}>
+                <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:16, justifyContent: isMobile ? 'center' : 'flex-start'}}>
                   <div style={{width:38,height:38,borderRadius:10,background:G.btn,display:'flex',alignItems:'center',justifyContent:'center'}}>
                     <Globe size={18} color="#fff"/>
                   </div>
@@ -832,7 +859,7 @@ export default function Home() {
                     NOMADS<span style={{color:C.blue}}>ADVISORS</span>
                   </span>
                 </div>
-                <p style={{fontSize:13,color:`rgba(26,54,93,0.6)`,lineHeight:1.7,marginBottom:16}}>
+                <p style={{fontSize:13,color:`rgba(26,54,93,0.6)`,lineHeight:1.7,marginBottom:16, textAlign: isMobile ? 'center' : 'left'}}>
                   Empowering the next generation of digital nomads to build freedom-first lifestyles.
                 </p>
               </div>
@@ -841,7 +868,7 @@ export default function Home() {
                 {head:'Programs',links:['7-Day Starter','Income Engine','Freedom Mastermind']},
                 {head:'Contact',links:['Support','Community Hub','hello@nomadsadvisors.com']},
               ].map(col=>(
-                <div key={col.head}>
+                <div key={col.head} style={{textAlign: isMobile ? 'center' : 'left'}}>
                   <h4 style={{fontFamily:'Sora,sans-serif',fontWeight:800,color:C.darkNavy,marginBottom:14,fontSize:14}}>{col.head}</h4>
                   <ul style={{listStyle:'none',display:'flex',flexDirection:'column',gap:10}}>
                     {col.links.map(l=>(
@@ -851,9 +878,9 @@ export default function Home() {
                 </div>
               ))}
             </div>
-            <div style={{paddingTop:20,borderTop:`1px solid rgba(26,54,93,0.1)`,display:'flex',justifyContent:'space-between',flexWrap:'wrap',gap:12}}>
+            <div style={{paddingTop:20,borderTop:`1px solid rgba(26,54,93,0.1)`,display:'flex',justifyContent:'space-between',flexWrap:'wrap',gap:12, textAlign: isMobile ? 'center' : 'left', flexDirection: isMobile ? 'column' : 'row', alignItems:'center'}}>
               <p style={{fontSize:12,color:`rgba(26,54,93,0.5)`}}>© 2026 Nomads Advisors. All rights reserved.</p>
-              <div style={{display:'flex',gap:20}}>
+              <div style={{display:'flex',gap:20, flexWrap:'wrap', justifyContent:'center'}}>
                 {['Privacy Policy','Terms of Service','Cookie Policy'].map(l=>(
                   <a key={l} href="#" style={{fontSize:12,color:`rgba(26,54,93,0.5)`,textDecoration:'none'}}>{l}</a>
                 ))}
