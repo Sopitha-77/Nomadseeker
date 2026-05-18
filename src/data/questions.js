@@ -6,15 +6,12 @@ const questions = {
       title: "Entrepreneurial Passion",
       subtitle: "What You Love to Build",
       questions: [
-        // MCQs (Questions 1-3)
         { id: 1, type: "mcq", question: "What excites you most in business?", options: ["Building products", "Solving market gaps", "Creating brands", "Scaling ideas", "Leading teams", "Making money", "Innovating", "Disrupting industries"] },
         { id: 2, type: "mcq", question: "What kind of problems attract you?", options: ["Market inefficiencies", "Customer pain points", "Tech challenges", "Growth bottlenecks", "Financial gaps", "Operational issues", "Scaling challenges", "Innovation gaps"] },
         { id: 3, type: "mcq", question: "What energizes your work style?", options: ["Starting new ideas", "Closing deals", "Building systems", "Experimenting", "Networking", "Pitching", "Strategy planning", "Execution"] },
-        // Multi-Select (Questions 4-6)
         { id: 4, type: "multi", question: "What type of business do you gravitate toward?", instruction: "Select up to 2", options: ["Digital products", "Service-based", "Marketplace", "SaaS", "E-commerce", "Consulting", "Content-driven", "Community-based", "Other"] },
         { id: 5, type: "multi", question: "What keeps you engaged long-term?", instruction: "Select up to 2", options: ["Growth", "Money", "Impact", "Freedom", "Challenge", "Recognition", "Innovation", "Ownership", "Other"] },
         { id: 6, type: "multi", question: "What content do you consume most?", instruction: "Select up to 2", options: ["Startups", "Business strategies", "Investments", "Marketing", "Tech trends", "Case studies", "Leadership", "Scaling systems", "Other"] },
-        // Writing/Suggestions (Questions 7-10)
         { id: 7, type: "writing", question: "What type of business would you build even without funding?", suggestions: ["Digital product", "Service business", "Community platform", "Content business", "Consulting", "Marketplace", "SaaS tool", "Local service", "Online course", "Creative agency"] },
         { id: 8, type: "writing", question: "What problems do you feel obsessed to solve?", suggestions: ["Customer pain points", "Market inefficiencies", "Tech challenges", "Process gaps", "Education access", "Healthcare access", "Financial inclusion", "Environmental issues", "Productivity tools", "Communication barriers"] },
         { id: 9, type: "writing", question: "What kind of impact do you want your business to create?", suggestions: ["Economic growth", "Social change", "Tech innovation", "Job creation", "Environmental sustainability", "Education access", "Financial freedom", "Community building", "Industry disruption", "Global reach"] },

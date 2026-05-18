@@ -1,555 +1,533 @@
-import { createContext, useContext, useState, useCallback, useMemo } from "react";
-import questions from "../data/questions";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useMemo,
+  useCallback,
+} from "react";
+import questions from "../data/questions.js";
 
-const IkigaiContext = createContext(null);
-
-/* ─── PALETTE (matches SevenDays gradient world) ─────────────────────────── */
+/* ════════════════════════════════════════════════════════════════
+   DESIGN PALETTE  ·  shared across every component
+   ════════════════════════════════════════════════════════════════ */
 export const PALETTE = {
-  darkNavy:   "rgb(26,54,93)",
-  blue:       "rgb(43,108,176)",
-  lightBlue:  "rgb(74,144,226)",
-  pale1:      "rgb(214,239,255)",
-  pale2:      "rgb(185,226,255)",
-  // Ikigai-quadrant colors (matching the classic Ikigai wheel)
-  loveColor:    "#10B981",  // emerald (What you LOVE)
-  goodAtColor:  "#F59E0B",  // amber (What you're GOOD AT)
-  worldColor:   "#EF4444",  // rose-red (What the WORLD NEEDS)
-  paidColor:    "#F97316",  // orange (What you can be PAID FOR)
+  tiber: "rgb(20, 68, 71)",
+  deepTeal: "rgb(20, 68, 71)",
+  mediumTeal: "rgb(43, 135, 141)",
+  brightTeal: "rgb(97, 206, 207)", // #61CECF — the active accent
+  accentHex: "#61CECF",
+  lightMint: "rgb(223, 246, 246)",
+  white: "#ffffff",
+  ink: "#0e2f31",
 };
 
-/* ─── ROLE METADATA ──────────────────────────────────────────────────────── */
-const ROLE_META = {
-  entrepreneur: {
-    id: "entrepreneur",
-    label: "Entrepreneur",
-    icon: "🌍",
-    color: PALETTE.lightBlue,
-    bg: "rgba(74,144,226,0.08)",
-    accent: "rgba(74,144,226,0.25)",
-    description: "Building ventures, startups & independent businesses",
-  },
-  managerial: {
-    id: "managerial",
-    label: "Managerial",
-    icon: "📊",
-    color: PALETTE.blue,
-    bg: "rgba(43,108,176,0.08)",
-    accent: "rgba(43,108,176,0.25)",
-    description: "Leading teams, driving processes & corporate growth",
-  },
-  technician: {
-    id: "technician",
-    label: "Technician",
-    icon: "🔧",
-    color: PALETTE.darkNavy,
-    bg: "rgba(26,54,93,0.07)",
-    accent: "rgba(26,54,93,0.2)",
-    description: "Building products, coding & technical craft",
-  },
-};
-
-/* ─── DAY THEMES ─────────────────────────────────────────────────────────── */
-const DAY_THEMES = [
-  { color: PALETTE.lightBlue, bg: "rgba(74,144,226,0.08)", accent: "rgba(74,144,226,0.25)", icon: "❤️", subtitle: "What ignites your soul" },
-  { color: PALETTE.blue,      bg: "rgba(43,108,176,0.08)", accent: "rgba(43,108,176,0.25)", icon: "🌟", subtitle: "How you want to live" },
-  { color: PALETTE.darkNavy,  bg: "rgba(26,54,93,0.07)",   accent: "rgba(26,54,93,0.2)",    icon: "⚡", subtitle: "What you do best" },
-  { color: PALETTE.lightBlue, bg: "rgba(74,144,226,0.08)", accent: "rgba(74,144,226,0.25)", icon: "💼", subtitle: "How you earn & grow" },
-  { color: PALETTE.blue,      bg: "rgba(43,108,176,0.08)", accent: "rgba(43,108,176,0.25)", icon: "🎯", subtitle: "Why you do what you do" },
-  { color: PALETTE.darkNavy,  bg: "rgba(26,54,93,0.07)",   accent: "rgba(26,54,93,0.2)",    icon: "🗺️", subtitle: "Where you're headed" },
+/*
+   Per-day visual metadata. Headline copy follows the requested flow:
+     Day 1 → Passion
+     Day 2 → Lifestyle
+     Day 3 → Skills
+     Day 4 → Vocation
+     Day 5 → Mission
+     Day 6 → Vision
+     Day 7 → Ikigai Result 🚀  (rendered by ProgressBar only)
+*/
+export const DAYS_META = [
+  { day: 1, icon: "❤️",  color: "rgb(97, 206, 207)", accent: "rgba(97,206,207,0.32)", bg: "rgba(97,206,207,0.12)",
+    headline: "Passion",   description: "Explore the activities, topics and experiences that make you feel most alive." },
+  { day: 2, icon: "🌿",  color: "rgb(58, 175, 176)", accent: "rgba(58,175,176,0.32)", bg: "rgba(58,175,176,0.12)",
+    headline: "Lifestyle", description: "Picture the rhythm, freedom and environment you want your days to have." },
+  { day: 3, icon: "⚡",  color: "rgb(43, 135, 141)", accent: "rgba(43,135,141,0.32)", bg: "rgba(43,135,141,0.12)",
+    headline: "Skills",    description: "Identify the skills and talents that come naturally and powerfully to you." },
+  { day: 4, icon: "💼",  color: "rgb(32, 110, 116)", accent: "rgba(32,110,116,0.32)", bg: "rgba(32,110,116,0.12)",
+    headline: "Vocation",  description: "Clarify how you want to grow, earn and be valued professionally." },
+  { day: 5, icon: "🎯",  color: "rgb(24, 88, 92)",   accent: "rgba(24,88,92,0.30)",   bg: "rgba(24,88,92,0.10)",
+    headline: "Mission",   description: "Connect with the impact you want to have on the world around you." },
+  { day: 6, icon: "🗺️",  color: "rgb(20, 68, 71)",   accent: "rgba(20,68,71,0.28)",   bg: "rgba(20,68,71,0.10)",
+    headline: "Vision",    description: "Synthesise everything into a clear, actionable vision for your future." },
 ];
 
-/* ─── TRAIT TAXONOMY ──────────────────────────────────────────────────────── */
-const TRAIT_PATTERNS = {
-  "Visionary Thinker":          ["vision", "future", "imagine", "dream", "long-term", "big picture", "10-year", "horizon", "innovate", "transform"],
-  "Analytical Mind":            ["analyze", "logic", "data", "research", "investigate", "system", "methodical", "rational", "evidence", "metrics"],
-  "Creative Innovator":         ["create", "design", "invent", "original", "unique", "fresh", "imaginative", "artistic", "novel", "innovation"],
-  "Strategic Planner":          ["strategy", "plan", "roadmap", "goal", "milestone", "objective", "framework", "structure", "blueprint", "playbook"],
-  "Empathetic Connector":       ["empathy", "understand", "listen", "people", "care", "compassion", "support", "human", "relationship", "connect"],
-  "Bold Risk-Taker":            ["risk", "bold", "courage", "venture", "leap", "dare", "fearless", "ambitious", "daring", "audacious"],
-  "Pragmatic Executor":         ["execute", "deliver", "ship", "implement", "practical", "results", "action", "doer", "finish", "complete"],
-  "Collaborative Leader":       ["team", "together", "collaborate", "lead", "guide", "mentor", "coach", "inspire", "unite", "rally"],
-  "Detail-Oriented Craftsman":  ["detail", "precise", "accurate", "thorough", "quality", "meticulous", "craft", "perfect", "polish", "refine"],
-  "Curious Explorer":           ["learn", "curious", "explore", "discover", "study", "read", "question", "experiment", "growth", "wonder"],
-  "Independent Spirit":         ["freedom", "independent", "autonomous", "solo", "remote", "flexible", "self", "own", "nomad", "anywhere"],
-  "Driven Achiever":            ["achieve", "success", "win", "excel", "wealth", "growth", "scale", "results", "money", "performance"],
-  "Purposeful Mentor":          ["teach", "mentor", "guide", "share", "educate", "wisdom", "uplift", "help", "serve", "impact"],
-  "Builder & Maker":            ["build", "make", "code", "develop", "construct", "engineer", "product", "tool", "platform", "system"],
+/* Step 7 — the result reveal (used by ProgressBar's step rail) */
+export const RESULT_STEP = {
+  day: 7,
+  icon: "🚀",
+  color: "rgb(97, 206, 207)",
+  headline: "Ikigai Result",
 };
 
-/* ─── STRENGTH PATTERNS ──────────────────────────────────────────────────── */
-const STRENGTH_PATTERNS = {
-  "Problem Solving":      ["solve", "fix", "debug", "resolve", "diagnose", "troubleshoot", "challenge", "puzzle"],
-  "Communication":        ["communicate", "speak", "write", "present", "articulate", "express", "story", "pitch"],
-  "Creative Design":      ["design", "creative", "aesthetic", "visual", "art", "ux", "ui", "brand"],
-  "Strategic Thinking":   ["strategy", "plan", "vision", "framework", "long-term", "direction", "foresight"],
-  "Leadership":           ["lead", "guide", "direct", "manage", "mentor", "coach", "inspire", "rally"],
-  "Technical Mastery":    ["code", "engineer", "technical", "develop", "build", "program", "architecture"],
-  "Empathy & EQ":         ["empathy", "emotional", "listen", "understand", "compassion", "care", "intuit"],
-  "Adaptability":         ["adapt", "flexible", "pivot", "agile", "learn", "change", "evolve"],
-  "Attention to Detail":  ["detail", "precise", "thorough", "meticulous", "quality", "accurate", "polish"],
-  "Execution & Delivery": ["execute", "deliver", "ship", "complete", "deadline", "finish", "action"],
-  "Networking":           ["network", "connect", "relationship", "people", "community", "outreach"],
-  "Financial Acumen":     ["finance", "invest", "money", "wealth", "revenue", "profit", "roi"],
+/* Role display metadata */
+export const ROLES = {
+  entrepreneur: { icon: "🌍", name: "Entrepreneur", tagline: "Build & Found" },
+  managerial:   { icon: "📊", name: "Managerial",   tagline: "Lead & Organise" },
+  technician:   { icon: "🔧", name: "Technician",   tagline: "Build & Craft" },
 };
 
-/* ─── CAREER MAPPING by trait combinations ───────────────────────────────── */
-const CAREER_MAP = {
+/* ════════════════════════════════════════════════════════════════
+   TRAIT ENGINE
+   ----------------------------------------------------------------
+   Every keyword that can appear in an option / suggestion / written
+   answer is mapped to one or more personality dimensions. The engine
+   scans ALL of a user's responses, scores each dimension, and derives
+   traits, strengths, interests, the four Ikigai quadrants AND three
+   recommended career paths — entirely from the user's own selections.
+   ════════════════════════════════════════════════════════════════ */
+
+const TRAIT_RULES = [
+  { key: "visionary",    label: "Visionary Thinker",    match: ["vision", "innovat", "disrupt", "future", "idea", "big-picture", "10-year", "legacy", "transform", "imagine"] },
+  { key: "builder",      label: "Hands-on Builder",     match: ["build", "product", "system", "architect", "create", "develop", "mvp", "ship", "craft", "code", "design", "engineer"] },
+  { key: "strategic",    label: "Strategic Planner",    match: ["strateg", "plan", "analy", "data", "logic", "structure", "decision", "framework", "model", "process"] },
+  { key: "leader",       label: "Natural Leader",       match: ["lead", "manage", "team", "mentor", "coach", "delegat", "guide", "influence", "responsib", "organis", "organiz"] },
+  { key: "driven",       label: "Driven Achiever",      match: ["growth", "scale", "achieve", "result", "execut", "fast", "aggressive", "hustle", "deliver", "win", "target", "ambition"] },
+  { key: "independent",  label: "Independent Spirit",   match: ["freedom", "independ", "solo", "remote", "flexible", "autonom", "control", "self", "location", "nomad"] },
+  { key: "communicator", label: "Strong Communicator",  match: ["communicat", "network", "pitch", "sell", "sales", "negotiat", "connect", "speaking", "relationship", "brand"] },
+  { key: "analytical",   label: "Analytical Mind",      match: ["analy", "precision", "accuracy", "debug", "optimi", "test", "quality", "detail", "research", "logic", "data"] },
+  { key: "purposeful",   label: "Purpose-Driven",       match: ["purpose", "impact", "mission", "change", "serve", "contribut", "society", "community", "world", "meaning", "help", "social"] },
+  { key: "learner",      label: "Lifelong Learner",     match: ["learn", "mastery", "skill", "grow", "study", "course", "practice", "improve", "curio", "knowledge", "expert"] },
+  { key: "resilient",    label: "Resilient & Bold",     match: ["risk", "bold", "fail", "challenge", "experiment", "uncertain", "pivot", "tough", "pressure", "crisis"] },
+  { key: "stable",       label: "Stability Seeker",     match: ["stabil", "secure", "balance", "consistent", "predict", "structured", "routine", "long-term", "steady"] },
+];
+
+const QUADRANT_MAP = {
+  passion:    ["visionary", "builder", "independent", "learner"],
+  profession: ["builder", "strategic", "analytical", "communicator"],
+  mission:    ["purposeful", "leader", "visionary", "communicator"],
+  vocation:   ["driven", "strategic", "leader", "resilient"],
+};
+
+const QUADRANT_PHRASES = {
+  passion: {
+    visionary:   "imagining what doesn't yet exist",
+    builder:     "building things with your own hands",
+    independent: "working on your own terms with full freedom",
+    learner:     "constantly learning and sharpening your craft",
+  },
+  profession: {
+    builder:      "turning ideas into working, real-world solutions",
+    strategic:    "thinking several moves ahead and planning the path",
+    analytical:   "diagnosing problems with precision and clarity",
+    communicator: "translating complex ideas so others act on them",
+  },
+  mission: {
+    purposeful:   "creating change that genuinely matters",
+    leader:       "lifting the people and teams around you",
+    visionary:    "pushing your field somewhere new",
+    communicator: "connecting people around a shared goal",
+  },
+  vocation: {
+    driven:    "delivering results the market is willing to pay for",
+    strategic: "spotting and capturing high-value opportunities",
+    leader:    "owning outcomes others depend on",
+    resilient: "thriving where most people hesitate",
+  },
+};
+
+const ROLE_IDENTITY = {
+  entrepreneur: { visionary: "The Visionary Founder", builder: "The Product Builder", driven: "The Relentless Scaler",
+    leader: "The Founding Leader", strategic: "The Strategic Operator", purposeful: "The Mission-Led Founder",
+    communicator: "The Magnetic Founder", independent: "The Sovereign Founder", analytical: "The Data-Led Founder",
+    learner: "The Always-Evolving Founder", resilient: "The Unbreakable Founder", stable: "The Sustainable Founder",
+    default: "The Independent Entrepreneur" },
+  managerial: { leader: "The People-First Leader", strategic: "The Strategic Manager", driven: "The Results Driver",
+    communicator: "The Connective Leader", stable: "The Steady Operator", purposeful: "The Purpose-Led Leader",
+    visionary: "The Transformational Leader", builder: "The Systems-Building Manager", analytical: "The Analytical Manager",
+    learner: "The Growth-Minded Leader", independent: "The Empowering Leader", resilient: "The Crisis-Ready Leader",
+    default: "The Organisational Leader" },
+  technician: { builder: "The Master Builder", analytical: "The Precision Specialist", learner: "The Craft-Obsessed Expert",
+    visionary: "The Systems Architect", strategic: "The Technical Strategist", purposeful: "The Impact-Driven Engineer",
+    leader: "The Technical Lead", communicator: "The Bridging Engineer", driven: "The High-Output Engineer",
+    independent: "The Autonomous Specialist", resilient: "The Battle-Tested Engineer", stable: "The Dependable Specialist",
+    default: "The Technical Craftsman" },
+};
+
+/* Career-path recommendations, keyed by role then dimension. */
+const CAREER_PATHS = {
   entrepreneur: {
-    "Visionary Thinker":       ["Startup Founder", "Venture Builder", "Innovation Catalyst"],
-    "Bold Risk-Taker":         ["Serial Entrepreneur", "Early-Stage Founder", "Disruptive Innovator"],
-    "Creative Innovator":      ["Creative Agency Founder", "Product Studio Owner", "Brand Architect"],
-    "Strategic Planner":       ["Growth Strategy Consultant", "Business Model Designer", "Scaling Advisor"],
-    "Builder & Maker":         ["Indie Hacker / Solo Founder", "SaaS Builder", "Bootstrapped Founder"],
-    "Driven Achiever":         ["Scale-Up CEO", "Growth-Stage Founder", "Empire Builder"],
-    "Independent Spirit":      ["Digital Nomad Entrepreneur", "Remote Business Owner", "Lifestyle Founder"],
-    "Empathetic Connector":    ["Community-Led Founder", "Mission-Driven Entrepreneur", "Social Venture Builder"],
+    visionary:    { title: "Startup Founder / CEO",         why: "You see opportunities before others and love turning a bold vision into a venture." },
+    builder:      { title: "Product-Led Founder",           why: "You'd rather build the product than just talk about it — ideal for SaaS or tooling startups." },
+    strategic:    { title: "Venture Strategist / Operator", why: "You think in systems and moves ahead — a strong fit for a strategy-led founder or COO role." },
+    leader:       { title: "Founder & Team Builder",        why: "You naturally rally people, so a venture where you lead a growing team suits you." },
+    driven:       { title: "Growth-Focused Founder",        why: "Your relentless drive points to scalable, growth-stage businesses." },
+    communicator: { title: "Sales-Led / Community Founder", why: "You can sell a vision and build an audience — great for community or creator businesses." },
+    analytical:   { title: "Data-Driven Founder",           why: "You validate with evidence — well suited to analytics, fintech or research-heavy ventures." },
+    purposeful:   { title: "Social-Impact Entrepreneur",    why: "You want the work to matter — mission-driven or impact startups fit you best." },
+    independent:  { title: "Solo / Bootstrapped Founder",   why: "You value autonomy — an indie business or one-person SaaS lets you run it your way." },
+    learner:      { title: "Serial Builder / Indie Hacker", why: "You love learning by shipping — rapid experiments and multiple small bets suit you." },
+    resilient:    { title: "Turnaround / High-Risk Founder",why: "You thrive under pressure — bold, high-uncertainty ventures play to your strength." },
+    stable:       { title: "Sustainable Business Owner",    why: "You prefer durable over explosive — a steady, profitable lifestyle business fits." },
   },
   managerial: {
-    "Collaborative Leader":    ["Director of Operations", "Head of People & Culture", "Team Lead / VP"],
-    "Strategic Planner":       ["Chief of Staff", "Strategy Director", "Program Manager"],
-    "Visionary Thinker":       ["Senior Director", "VP of Strategy", "Transformation Lead"],
-    "Empathetic Connector":    ["People Operations Lead", "HR Business Partner", "Talent Director"],
-    "Detail-Oriented Craftsman":["Operations Manager", "Process Improvement Lead", "Quality Director"],
-    "Pragmatic Executor":      ["Project Manager", "Delivery Lead", "Implementation Manager"],
-    "Driven Achiever":         ["Regional Manager", "General Manager", "Business Unit Head"],
-    "Analytical Mind":         ["Business Operations Analyst", "Performance Manager", "Insights Lead"],
+    leader:       { title: "People & Team Leader",            why: "Developing and leading people is your superpower — head of team or department." },
+    strategic:    { title: "Strategy / Operations Manager",   why: "You plan several moves ahead — strong fit for strategy or operations leadership." },
+    driven:       { title: "Performance / Delivery Manager",  why: "You push outcomes — ideal for delivery, programme or growth management." },
+    communicator: { title: "Stakeholder / Partnerships Lead", why: "You connect people and align interests — partnerships or comms leadership suits you." },
+    stable:       { title: "Operations / Process Manager",    why: "You build dependable systems — operations or process-excellence leadership." },
+    purposeful:   { title: "Culture & People Officer",        why: "You care about impact on people — a culture, L&D or people-ops leadership track." },
+    visionary:    { title: "Transformation / Change Leader",  why: "You see how things could be — change management and transformation leadership." },
+    builder:      { title: "Programme / Project Director",    why: "You like building structures — large-scale programme and delivery leadership." },
+    analytical:   { title: "Business / Analytics Manager",    why: "You decide with data — analytics, BI or performance management leadership." },
+    learner:      { title: "Coaching & Development Leader",   why: "You grow people and yourself — talent development and coaching leadership." },
+    independent:  { title: "Autonomous Unit / GM Role",       why: "You run things well with freedom — a general-manager style mandate fits." },
+    resilient:    { title: "Crisis & Turnaround Manager",     why: "You hold steady under fire — crisis, recovery and high-pressure leadership." },
   },
   technician: {
-    "Builder & Maker":         ["Senior Software Engineer", "Full-Stack Developer", "Product Engineer"],
-    "Analytical Mind":         ["Data Engineer", "ML Engineer", "Systems Analyst"],
-    "Creative Innovator":      ["UI/UX Engineer", "Creative Technologist", "Front-End Specialist"],
-    "Detail-Oriented Craftsman":["Software Architect", "Quality Engineer", "Platform Engineer"],
-    "Curious Explorer":        ["R&D Engineer", "Developer Advocate", "Research Engineer"],
-    "Independent Spirit":      ["Freelance Developer", "Remote Tech Consultant", "Digital Nomad Engineer"],
-    "Pragmatic Executor":      ["DevOps Engineer", "Site Reliability Engineer", "Release Engineer"],
-    "Strategic Planner":       ["Tech Lead", "Engineering Manager", "Solutions Architect"],
+    builder:      { title: "Software Engineer / Builder",        why: "You love making things work — full-stack, product or systems engineering." },
+    analytical:   { title: "Data / QA / Performance Engineer",   why: "You obsess over precision — data, testing or performance engineering." },
+    learner:      { title: "Specialist / Domain Expert",         why: "You go deep — a focused specialist or principal-engineer track suits you." },
+    visionary:    { title: "Systems / Solutions Architect",      why: "You see the whole system — architecture and technical design leadership." },
+    strategic:    { title: "Technical Lead / Tech Strategist",   why: "You plan the technical path — tech lead or staff-engineer direction." },
+    purposeful:   { title: "Impact-Driven Engineer",             why: "You want your code to matter — civic-tech, health-tech or open-source roles." },
+    leader:       { title: "Engineering Lead / Manager",         why: "You guide other engineers well — a team-lead or EM track fits." },
+    communicator: { title: "Developer Advocate / Solutions Eng", why: "You explain tech clearly — DevRel, solutions or pre-sales engineering." },
+    driven:       { title: "High-Output Product Engineer",       why: "You ship fast and often — fast-moving product or startup engineering." },
+    independent:  { title: "Freelance / Contract Specialist",    why: "You value autonomy — independent consulting or contract engineering." },
+    resilient:    { title: "SRE / Reliability Engineer",         why: "You stay calm under failure — reliability, on-call and infra engineering." },
+    stable:       { title: "Platform / Maintenance Engineer",    why: "You value dependable systems — platform, infra or long-lived product work." },
   },
 };
 
-/* ─── TEXT EXTRACTION ────────────────────────────────────────────────────── */
-function extractAllResponses(answers) {
-  const out = [];
-  Object.entries(answers || {}).forEach(([qId, a]) => {
-    if (a == null) return;
-    if (typeof a === "string") {
-      if (a.trim()) out.push({ qId, text: a.trim() });
-    } else if (Array.isArray(a)) {
-      a.forEach((x) => x && out.push({ qId, text: String(x).trim() }));
-    } else if (typeof a === "object") {
-      if (a.text?.trim()) out.push({ qId, text: a.text.trim() });
-      if (Array.isArray(a.selected)) a.selected.forEach((x) => x && out.push({ qId, text: String(x).trim() }));
-      if (a.mcq?.trim()) out.push({ qId, text: a.mcq.trim() });
-      if (a.other?.trim()) out.push({ qId, text: a.other.trim() });
-    }
-  });
-  return out;
+/* Flatten a single stored answer into searchable text tokens */
+function answerToTokens(answer) {
+  if (!answer) return [];
+  const tokens = [];
+  const push = (v) => {
+    if (v && typeof v === "string") tokens.push(v.toLowerCase());
+  };
+  if (typeof answer === "string") push(answer);
+  else if (Array.isArray(answer)) answer.forEach(push);
+  else if (typeof answer === "object") {
+    push(answer.mcq);
+    push(answer.text);
+    push(answer.other);
+    if (Array.isArray(answer.selected)) answer.selected.forEach(push);
+  }
+  return tokens;
 }
 
-/* ─── CORE TRAIT ANALYZER ─────────────────────────────────────────────────── */
-function analyzeAnswers(answers, role) {
-  const responses = extractAllResponses(answers);
-  const combinedText = responses.map((r) => r.text).join(" ").toLowerCase();
-  const responseTexts = responses.map((r) => r.text);
+/* Core scoring function — returns a full, dynamic analysis object */
+export function analyzeAnswers(role, answers) {
+  const scores = Object.fromEntries(TRAIT_RULES.map((r) => [r.key, 0]));
+  const interestTally = {};
+  let answeredCount = 0;
 
-  // Trait scoring
-  const traitScores = {};
-  for (const [trait, kws] of Object.entries(TRAIT_PATTERNS)) {
-    let score = 0;
-    kws.forEach((kw) => {
-      const k = kw.toLowerCase();
-      if (combinedText.includes(k)) score += 1;
-      if (responseTexts.some((r) => r.toLowerCase() === k)) score += 1.5;
-      responseTexts.forEach((r) => {
-        if (r.toLowerCase().includes(k) && r.length < 60) score += 0.4;
+  Object.values(answers || {}).forEach((ans) => {
+    const tokens = answerToTokens(ans);
+    if (tokens.length) answeredCount += 1;
+
+    tokens.forEach((token) => {
+      TRAIT_RULES.forEach((rule) => {
+        if (rule.match.some((m) => token.includes(m))) scores[rule.key] += 1;
       });
+      token
+        .split(/[,/]| - |\u2014|\u2013/)
+        .map((p) => p.trim())
+        .forEach((phrase) => {
+          if (phrase.length > 1 && phrase.length < 32) {
+            interestTally[phrase] = (interestTally[phrase] || 0) + 1;
+          }
+        });
     });
-    if (score > 0) traitScores[trait] = score;
-  }
-
-  const roleBoosts = {
-    entrepreneur: ["Visionary Thinker", "Bold Risk-Taker", "Driven Achiever", "Strategic Planner"],
-    managerial:   ["Collaborative Leader", "Strategic Planner", "Pragmatic Executor", "Empathetic Connector"],
-    technician:   ["Builder & Maker", "Analytical Mind", "Detail-Oriented Craftsman", "Curious Explorer"],
-  };
-  (roleBoosts[role] || []).forEach((t) => {
-    traitScores[t] = (traitScores[t] || 0) + 0.8;
   });
 
-  const traits = Object.entries(traitScores)
+  const ranked = TRAIT_RULES.map((r) => ({ ...r, score: scores[r.key] })).sort(
+    (a, b) => b.score - a.score
+  );
+  const topDims = ranked.filter((r) => r.score > 0);
+  const dominant = topDims[0] || ranked[0];
+  const baseDims = topDims.length ? topDims : ranked;
+
+  const topTraits = baseDims.slice(0, 5).map((r) => r.label);
+
+  const STRENGTH_LABELS = {
+    visionary: "Vision & Big-Picture Thinking",
+    builder: "Building & Execution",
+    strategic: "Strategy & Planning",
+    leader: "Leadership & Influence",
+    driven: "Drive & Delivery",
+    independent: "Autonomy & Self-Direction",
+    communicator: "Communication & Persuasion",
+    analytical: "Analysis & Precision",
+    purposeful: "Purpose & Impact Focus",
+    learner: "Continuous Learning",
+    resilient: "Resilience & Risk Appetite",
+    stable: "Consistency & Reliability",
+  };
+  const coreStrengths = baseDims.slice(0, 4).map((r) => STRENGTH_LABELS[r.key]);
+
+  const NOISE = new Set([
+    "other", "select up to 2", "the", "and", "for", "your", "what", "you",
+    "with", "a", "an", "to", "of", "or", "my", "i", "me", "it", "is", "in",
+    "without", "even", "most", "more", "want", "would", "do", "feel", "much",
+    "make", "be", "are", "how", "kind", "type", "your own",
+  ]);
+  const interestPaths = Object.entries(interestTally)
+    .filter(([w]) => !NOISE.has(w) && !w.includes("select up"))
     .sort((a, b) => b[1] - a[1])
-    .map(([t]) => t)
-    .slice(0, 6);
+    .slice(0, 6)
+    .map(([w]) => w.replace(/\b\w/g, (c) => c.toUpperCase()));
 
-  // Strength scoring
-  const strengthScores = {};
-  for (const [s, kws] of Object.entries(STRENGTH_PATTERNS)) {
-    let score = 0;
-    kws.forEach((kw) => {
-      if (combinedText.includes(kw.toLowerCase())) score += 1;
-    });
-    if (score > 0) strengthScores[s] = score;
-  }
-  const strengths = Object.entries(strengthScores)
-    .sort((a, b) => b[1] - a[1])
-    .map(([s]) => s)
-    .slice(0, 5);
-
-  // Ikigai 4-dimension scoring with question-id awareness
-  const dimensions = { love: 0, goodAt: 0, paidFor: 0, worldNeeds: 0 };
-  responses.forEach(({ qId, text }) => {
-    const t = text.toLowerCase();
-    const dayMatch = String(qId).match(/d(\d+)/i);
-    const dayNum = dayMatch ? parseInt(dayMatch[1], 10) : 0;
-    const wordWeight = Math.min(text.split(/\s+/).length / 3, 4);
-
-    if (dayNum === 1) dimensions.love += 1.5 + wordWeight * 0.5;
-    if (dayNum === 3) dimensions.goodAt += 1.5 + wordWeight * 0.5;
-    if (dayNum === 4) dimensions.paidFor += 1.5 + wordWeight * 0.5;
-    if (dayNum === 5) dimensions.worldNeeds += 1.5 + wordWeight * 0.5;
-    if (dayNum === 2 || dayNum === 6) {
-      if (/love|passion|enjoy|excite|thrill/.test(t)) dimensions.love += 0.6;
-      if (/skill|good at|strength|master|expert/.test(t)) dimensions.goodAt += 0.6;
-      if (/income|money|wealth|earn|paid|business|revenue/.test(t)) dimensions.paidFor += 0.6;
-      if (/help|impact|change|world|community|serve|mission/.test(t)) dimensions.worldNeeds += 0.6;
+  const buildQuadrant = (quad) => {
+    const dims = QUADRANT_MAP[quad]
+      .map((k) => ({ k, score: scores[k] }))
+      .sort((a, b) => b.score - a.score);
+    const phrases = dims
+      .filter((d) => d.score > 0)
+      .slice(0, 2)
+      .map((d) => QUADRANT_PHRASES[quad][d.k])
+      .filter(Boolean);
+    if (!phrases.length) {
+      phrases.push(QUADRANT_PHRASES[quad][QUADRANT_MAP[quad][0]]);
     }
-
-    if (/love|passion|enjoy|excite|obsess|favorite|alive/.test(t)) dimensions.love += 0.3;
-    if (/skill|expert|master|talent|advantage|good at/.test(t)) dimensions.goodAt += 0.3;
-    if (/income|money|wealth|earn|paid|profit|salary/.test(t)) dimensions.paidFor += 0.3;
-    if (/help|impact|world|community|serve|change|mission|problem/.test(t)) dimensions.worldNeeds += 0.3;
-  });
-
-  Object.keys(dimensions).forEach((k) => {
-    if (dimensions[k] < 1) dimensions[k] = 1.2;
-  });
-
-  const careerHints = [];
-  const careerForRole = CAREER_MAP[role] || {};
-  traits.forEach((t) => {
-    const careers = careerForRole[t];
-    if (careers) careerHints.push(...careers);
-  });
-  if (careerHints.length === 0 && role) {
-    const allRoleCareers = Object.values(careerForRole).flat();
-    careerHints.push(...allRoleCareers.slice(0, 6));
-  }
-
-  const uniqueCareers = [...new Set(careerHints)].slice(0, 6);
-
-  return {
-    traits,
-    strengths,
-    dimensions,
-    careerHints: uniqueCareers,
-    responseCount: responses.length,
-    rawResponses: responseTexts,
-  };
-}
-
-/* ─── PERSONALIZED INSIGHT BUILDER ────────────────────────────────────────── */
-function buildResult(answers, role, analysis) {
-  const responses = extractAllResponses(answers);
-  const roleMeta = ROLE_META[role] || ROLE_META.entrepreneur;
-  const topTraits = analysis.traits.slice(0, 3);
-  const topStrengths = analysis.strengths.slice(0, 3);
-
-  const dayThemes = {};
-  responses.forEach(({ qId, text }) => {
-    const m = String(qId).match(/d(\d+)/i);
-    const d = m ? parseInt(m[1], 10) : 0;
-    if (!dayThemes[d]) dayThemes[d] = [];
-    dayThemes[d].push(text);
-  });
-
-  const passionThemes = (dayThemes[1] || []).filter((t) => t.length > 2);
-  const strengthThemes = (dayThemes[3] || []).filter((t) => t.length > 2);
-  const careerThemes = (dayThemes[4] || []).filter((t) => t.length > 2);
-  const purposeThemes = (dayThemes[5] || []).filter((t) => t.length > 2);
-  const visionThemes = (dayThemes[6] || []).filter((t) => t.length > 2);
-
-  const pickShort = (arr, max = 3) =>
-    arr.filter((t) => t.split(/\s+/).length <= 5 && t.length < 50).slice(0, max);
-
-  const passionArea =
-    pickShort(passionThemes, 3).join(", ") ||
-    passionThemes[0]?.split(/[.,;]/)[0]?.trim().slice(0, 80) ||
-    "Creating things you care deeply about";
-
-  const strengthArea =
-    pickShort(strengthThemes, 3).join(", ") ||
-    topStrengths.slice(0, 3).join(", ") ||
-    "Your natural talents";
-
-  const vocationArea =
-    pickShort(careerThemes, 3).join(", ") ||
-    careerThemes[0]?.split(/[.,;]/)[0]?.trim().slice(0, 80) ||
-    analysis.careerHints[0] ||
-    "Work that compensates you well";
-
-  const missionArea =
-    pickShort(purposeThemes, 3).join(", ") ||
-    purposeThemes[0]?.split(/[.,;]/)[0]?.trim().slice(0, 80) ||
-    "Problems you feel called to solve";
-
-  // ── Ikigai Title ────────────────────────────────────────────────────────
-  const titleTemplates = {
-    entrepreneur: [
-      `The ${topTraits[0] || "Visionary"} Founder Forging ${topStrengths[0] || "Impact"}`,
-      `Building ${passionArea.split(",")[0]?.trim() || "Bold Ventures"} as a ${topTraits[1] || "Driven"} ${roleMeta.label}`,
-      `${topTraits[0] || "Visionary"} ${roleMeta.label}: Where ${topStrengths[0] || "Strategy"} Meets ${topStrengths[1] || "Vision"}`,
-    ],
-    managerial: [
-      `The ${topTraits[0] || "Strategic"} Leader Who Builds Through ${topStrengths[0] || "People"}`,
-      `Orchestrating ${passionArea.split(",")[0]?.trim() || "Excellence"} with ${topStrengths[0] || "Leadership"}`,
-      `${topTraits[0] || "Empathetic"} ${roleMeta.label}: Architect of ${topStrengths[0] || "Teams"} & ${topStrengths[1] || "Strategy"}`,
-    ],
-    technician: [
-      `The ${topTraits[0] || "Curious"} Builder Crafting ${topStrengths[0] || "Solutions"}`,
-      `Engineering ${passionArea.split(",")[0]?.trim() || "Elegant Systems"} with ${topStrengths[0] || "Precision"}`,
-      `${topTraits[0] || "Analytical"} ${roleMeta.label}: Where ${topStrengths[0] || "Code"} Becomes ${topStrengths[1] || "Craft"}`,
-    ],
+    return phrases;
   };
 
-  const titles = titleTemplates[role] || titleTemplates.entrepreneur;
-  const ikigaiTitle = titles[(analysis.responseCount + (topTraits[0]?.length || 0)) % titles.length];
+  const pq = buildQuadrant("passion");
+  const prq = buildQuadrant("profession");
+  const mq = buildQuadrant("mission");
+  const vq = buildQuadrant("vocation");
 
-  // ── Ikigai Summary ──────────────────────────────────────────────────────
-  const passionPart = passionThemes.length
-    ? `Your answers reveal a strong pull toward ${pickShort(passionThemes, 2).join(" and ") || "what you love"}`
-    : `You are drawn to work that matters`;
+  const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
 
-  const strengthPart = topStrengths.length
-    ? `, paired with real talent in ${topStrengths.slice(0, 2).join(" and ").toLowerCase()}`
-    : `, with genuine strengths waiting to be channeled`;
+  const passion = `You come most alive when ${pq.join(", and when ")}.`;
+  const profession = `Your natural edge lies in ${prq.join(", and in ")}.`;
+  const mission = `The world needs what you bring: ${mq.join(", and ")}.`;
+  const vocation = `You can build a living by ${vq.join(", and by ")}.`;
 
-  const purposePart = purposeThemes.length
-    ? `. The impact you described — ${(pickShort(purposeThemes, 1)[0] || purposeThemes[0]?.slice(0, 60) || "creating change")} — is the thread that ties everything together.`
-    : `. Your purpose is taking clear shape.`;
+  const identityMap = ROLE_IDENTITY[role] || ROLE_IDENTITY.entrepreneur;
+  const ikigaiIdentity = identityMap[dominant?.key] || identityMap.default;
 
-  const ikigaiSummary = `${passionPart}${strengthPart}${purposePart}`;
+  const second = topDims[1] || ranked[1];
+  const personalitySummary = `You lead with a ${dominant.label.toLowerCase()} mindset, balanced by ${(
+    second?.label || "a grounded"
+  ).toLowerCase()} tendencies. Your responses show someone who moves between ${cap(
+    pq[0] || "creating"
+  )} and ${vq[0] || "delivering value"} — a combination that very few people sustain well.`;
 
-  // ── Work Style ──────────────────────────────────────────────────────────
-  const wantsFreedom = responses.some((r) => /remote|flexible|nomad|freedom|anywhere|independent|own time/i.test(r.text));
-  const wantsTeam = responses.some((r) => /team|collaborate|together|community|partner/i.test(r.text));
-  const wantsFocus = responses.some((r) => /focus|deep work|solo|alone|quiet/i.test(r.text));
+  const motivationLine = `You are driven by ${
+    QUADRANT_PHRASES.mission[
+      QUADRANT_MAP.mission
+        .map((k) => ({ k, s: scores[k] }))
+        .sort((a, b) => b.s - a.s)[0].k
+    ] || "making a real difference"
+  }.`;
 
-  let workStyle = "You thrive in environments where ";
-  if (wantsFreedom && wantsTeam) workStyle += "you can move freely while staying connected to a tribe that gets you. ";
-  else if (wantsFreedom) workStyle += "location and schedule bend to your rhythm — not the other way around. ";
-  else if (wantsTeam) workStyle += "smart, kind people surround you and the work compounds together. ";
-  else if (wantsFocus) workStyle += "deep, uninterrupted focus is respected and outcomes speak louder than presence. ";
-  else workStyle += "your contribution is visible and your growth is intentional. ";
+  const ikigaiStatement = `Your Ikigai lives where ${
+    pq[0] || "what you love"
+  } meets ${prq[0] || "what you're great at"} — in service of ${
+    mq[0] || "something larger than yourself"
+  }.`;
 
-  if (topTraits.includes("Bold Risk-Taker") || topTraits.includes("Driven Achiever")) {
-    workStyle += "You need stakes — work without skin in the game will feel hollow.";
-  } else if (topTraits.includes("Empathetic Connector")) {
-    workStyle += "The people you serve matter as much as the outcome itself.";
-  } else if (topTraits.includes("Builder & Maker")) {
-    workStyle += "You need the freedom to make, ship, and iterate without permission.";
-  } else {
-    workStyle += "Autonomy, mastery, and purpose are non-negotiable.";
-  }
+  const nextStep =
+    "This week, pick the single answer you wrote with the most conviction and take one concrete action toward it — a message sent, a draft started, or a commitment made out loud.";
 
-  // ── Personal Insight ────────────────────────────────────────────────────
-  const traitCombo = topTraits.slice(0, 2).join(" + ");
-  const personalInsight = topTraits.length >= 2
-    ? `The combination of ${traitCombo} is unusual — most people lean heavily into one or the other. You carry both, which means you can ${
-        topTraits[0]?.includes("Visionary") || topTraits[0]?.includes("Creative")
-          ? "see what others can't yet see, then actually build it"
-          : topTraits[0]?.includes("Analytical") || topTraits[0]?.includes("Detail")
-          ? "go deep on the hard problems while still seeing the larger arc"
-          : "lead with conviction while staying genuinely curious about being wrong"
-      }. That's your unfair advantage.`
-    : `Your responses show someone who refuses easy categorization. Trust that — it's a signal, not a problem.`;
-
-  // ── Motivation Line ─────────────────────────────────────────────────────
-  const visionLine = visionThemes[0] || purposeThemes[0] || "";
-  let motivationLine;
-  if (visionLine && visionLine.length > 10) {
-    motivationLine = `You're driven by something specific — ${visionLine.slice(0, 100).replace(/\.$/, "")}. Stay with that.`;
-  } else if (topTraits.includes("Driven Achiever")) {
-    motivationLine = "You're driven by the gap between where you are and what you know you're capable of. That gap is the engine.";
-  } else if (topTraits.includes("Empathetic Connector") || topTraits.includes("Purposeful Mentor")) {
-    motivationLine = "You're driven by the people whose lives change because you showed up. Don't lose sight of them.";
-  } else if (topTraits.includes("Independent Spirit")) {
-    motivationLine = "You're driven by the right to build a life on your own terms. Protect that fiercely.";
-  } else if (topTraits.includes("Creative Innovator") || topTraits.includes("Builder & Maker")) {
-    motivationLine = "You're driven by the act of making things that didn't exist before. That's a rare fire — feed it.";
-  } else {
-    motivationLine = `You're driven by ${(purposeThemes[0] || "purpose work that matters").slice(0, 70)}. That's your true north.`;
-  }
-
-  // ── Career Paths ────────────────────────────────────────────────────────
-  let careerPaths = analysis.careerHints.slice(0, 3);
-  if (careerPaths.length < 3) {
-    const allRoleCareers = Object.values(CAREER_MAP[role] || {}).flat();
-    careerPaths = [...new Set([...careerPaths, ...allRoleCareers])].slice(0, 3);
+  // 3 career paths from the 3 strongest scored dimensions (de-duplicated)
+  const careerMap = CAREER_PATHS[role] || CAREER_PATHS.entrepreneur;
+  const careerPaths = [];
+  const seen = new Set();
+  baseDims.forEach((d) => {
+    if (careerPaths.length >= 3) return;
+    const c = careerMap[d.key];
+    if (c && !seen.has(c.title)) {
+      seen.add(c.title);
+      careerPaths.push(c);
+    }
+  });
+  while (careerPaths.length < 3) {
+    const fb = Object.values(careerMap).find((c) => !seen.has(c.title));
+    if (!fb) break;
+    seen.add(fb.title);
+    careerPaths.push(fb);
   }
 
   return {
-    ikigaiTitle,
-    ikigaiSummary,
+    role,
+    answeredCount,
+    ikigaiIdentity,
+    ikigaiTitle: `${ikigaiIdentity} — Forging a Path That's Unmistakably Yours`,
+    passion,
+    profession,
+    mission,
+    vocation,
+    personalitySummary,
+    topTraits: topTraits.length
+      ? topTraits
+      : ["Driven Achiever", "Builder", "Visionary Thinker"],
+    coreStrengths: coreStrengths.length
+      ? coreStrengths
+      : ["Building & Execution", "Strategy & Planning"],
+    interestPaths: interestPaths.length
+      ? interestPaths
+      : ["Building", "Growth", "Learning", "Impact"],
     careerPaths,
-    workStyle,
-    personalInsight,
     motivationLine,
-    passionArea,
-    strengthArea,
-    missionArea,
-    vocationArea,
-    personalityAnalysis: analysis,
+    ikigaiStatement,
+    nextStep,
+    scores,
+    dominant: dominant?.key,
   };
 }
 
-/* ─── PROVIDER ──────────────────────────────────────────────────────────── */
-export function IkigaiProvider({ children }) {
-  const [screen, setScreen]             = useState("landing");
-  const [role, setRole]                 = useState(null);
-  const [dayIndex, setDayIndex]         = useState(0);
-  const [questionIndex, setQuestionIndex] = useState(-1);
-  const [answers, setAnswers]           = useState({});
+/* ════════════════════════════════════════════════════════════════
+   CONTEXT
+   ════════════════════════════════════════════════════════════════ */
+const IkigaiContext = createContext(null);
+export const useIkigai = () => useContext(IkigaiContext);
+
+export const IkigaiProvider = ({ children, initialRole = null }) => {
+  const [screen, setScreen] = useState(initialRole ? "journey" : "landing");
+  const [role, setRole] = useState(initialRole);
+  const [dayIndex, setDayIndex] = useState(0);
+  const [questionIndex, setQuestionIndex] = useState(-1); // -1 => day intro
+  const [answers, setAnswers] = useState({}); // keyed `${role}-${day}-${qid}`
   const [completedDays, setCompletedDays] = useState([]);
-  const [result, setResult]             = useState(null);
-  const [justCompletedDay, setJustCompletedDay] = useState(null);
-  const [personalityAnalysis, setPersonalityAnalysis] = useState(null);
-
-  const roleQuestions = useMemo(() => (role ? questions[role] || [] : []), [role]);
-
-  const enrichedDays = useMemo(
-    () =>
-      roleQuestions.map((d, i) => ({
-        ...d,
-        ...DAY_THEMES[i] || DAY_THEMES[0],
-        description: `Explore your ${(d.title || "").toLowerCase()} through honest reflection.`,
-      })),
-    [roleQuestions]
+  const [showCelebration, setShowCelebration] = useState(false);
+  const [isMobile, setIsMobile] = useState(
+    typeof window !== "undefined" ? window.innerWidth < 768 : false
   );
 
-  const currentDayData = enrichedDays[dayIndex] || enrichedDays[0] || { questions: [] };
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
 
-  const goToRoleSelect = () => setScreen("roleSelect");
+  // Honour a role supplied later (e.g. navigation from Home)
+  useEffect(() => {
+    if (initialRole && !role) {
+      setRole(initialRole);
+      setScreen("journey");
+      setDayIndex(0);
+      setQuestionIndex(-1);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialRole]);
 
-  const selectRoleAndBegin = (selectedRole) => {
-    setRole(selectedRole);
+  const allDays = useMemo(() => (role ? questions[role] || [] : []), [role]);
+  const currentDayRaw = allDays[dayIndex] || null;
+  const currentDayMeta = DAYS_META[dayIndex];
+
+  const currentDayData = useMemo(() => {
+    if (!currentDayRaw) return null;
+    return {
+      ...currentDayRaw,
+      ...currentDayMeta,
+      title: currentDayRaw.title,
+      subtitle: currentDayRaw.subtitle,
+    };
+  }, [currentDayRaw, currentDayMeta]);
+
+  const answerKey = useCallback(
+    (qid) => `${role}-${dayIndex + 1}-${qid}`,
+    [role, dayIndex]
+  );
+
+  const handleAnswer = useCallback(
+    (qid, value) => {
+      const total = currentDayRaw?.questions?.length || 0;
+      setAnswers((prev) => ({ ...prev, [answerKey(qid)]: value }));
+      if (questionIndex < total - 1) {
+        setQuestionIndex((q) => q + 1);
+      } else {
+        setCompletedDays((prev) => [...new Set([...prev, dayIndex + 1])]);
+        setShowCelebration(true);
+      }
+    },
+    [answerKey, currentDayRaw, questionIndex, dayIndex]
+  );
+
+  const getSavedAnswer = useCallback(
+    (qid) => answers[answerKey(qid)],
+    [answers, answerKey]
+  );
+
+  const handleBack = useCallback(() => {
+    if (questionIndex > 0) setQuestionIndex((q) => q - 1);
+    else if (questionIndex === 0) setQuestionIndex(-1);
+    else if (questionIndex === -1 && dayIndex > 0) {
+      const prevDay = allDays[dayIndex - 1];
+      setDayIndex((d) => d - 1);
+      setQuestionIndex((prevDay?.questions?.length || 1) - 1);
+    }
+  }, [questionIndex, dayIndex, allDays]);
+
+  const afterCelebration = useCallback(() => {
+    setShowCelebration(false);
+    if (dayIndex < 5) {
+      setDayIndex((d) => d + 1);
+      setQuestionIndex(-1);
+    } else {
+      setScreen("result");
+    }
+  }, [dayIndex]);
+
+  const startDay = useCallback(() => setQuestionIndex(0), []);
+
+  const chooseRole = useCallback((r) => {
+    setRole(r);
+    setScreen("journey");
     setDayIndex(0);
     setQuestionIndex(-1);
-    setAnswers({});
-    setCompletedDays([]);
-    setResult(null);
-    setJustCompletedDay(null);
-    setPersonalityAnalysis(null);
-    setScreen("journey");
-  };
+  }, []);
 
-  const startDay = () => setQuestionIndex(0);
-
-  const handleAnswer = (qId, ans) => {
-    const newAnswers = { ...answers, [qId]: ans };
-    setAnswers(newAnswers);
-    const isLast = questionIndex >= (currentDayData.questions?.length || 0) - 1;
-    if (!isLast) {
-      setQuestionIndex((p) => p + 1);
-    } else {
-      setCompletedDays((p) => [...new Set([...p, currentDayData.day])]);
-      setJustCompletedDay(currentDayData.day);
-      setScreen("dayComplete");
-    }
-  };
-
-  const goBack = () => {
-    if (questionIndex > 0) {
-      setQuestionIndex((q) => q - 1);
-    } else if (dayIndex > 0) {
-      const prevDay = enrichedDays[dayIndex - 1];
-      const lastQ = (prevDay?.questions?.length || 1) - 1;
-      setDayIndex(dayIndex - 1);
-      setQuestionIndex(lastQ);
-    }
-  };
-
-  const afterCelebration = () => {
-    const isLastDay = dayIndex >= roleQuestions.length - 1;
-    if (isLastDay) {
-      computeResult(answers);
-    } else {
-      setDayIndex((p) => p + 1);
-      setQuestionIndex(-1);
-      setJustCompletedDay(null);
-      setScreen("journey");
-    }
-  };
-
-  const computeResult = useCallback(
-    (allAnswers) => {
-      setScreen("loading");
-      setTimeout(() => {
-        const analysis = analyzeAnswers(allAnswers, role);
-        const built = buildResult(allAnswers, role, analysis);
-        setPersonalityAnalysis(analysis);
-        setResult(built);
-        setScreen("result");
-      }, 1800);
-    },
-    [role]
-  );
-
-  const restart = () => {
+  const restart = useCallback(() => {
     setScreen("landing");
     setRole(null);
     setDayIndex(0);
     setQuestionIndex(-1);
     setAnswers({});
     setCompletedDays([]);
-    setResult(null);
-    setJustCompletedDay(null);
-    setPersonalityAnalysis(null);
+    setShowCelebration(false);
+  }, []);
+
+  const analysis = useMemo(
+    () => (role ? analyzeAnswers(role, answers) : null),
+    [role, answers]
+  );
+
+  const totalQuestions = useMemo(
+    () => allDays.reduce((s, d) => s + (d.questions?.length || 0), 0) || 1,
+    [allDays]
+  );
+  const answeredSoFar = useMemo(
+    () =>
+      allDays
+        .slice(0, dayIndex)
+        .reduce((s, d) => s + (d.questions?.length || 0), 0) +
+      Math.max(0, questionIndex),
+    [allDays, dayIndex, questionIndex]
+  );
+  const overallPct = Math.round((answeredSoFar / totalQuestions) * 100);
+
+  const value = {
+    PALETTE,
+    DAYS_META,
+    RESULT_STEP,
+    ROLES,
+    screen, setScreen,
+    role, chooseRole,
+    dayIndex, setDayIndex,
+    questionIndex, setQuestionIndex,
+    answers,
+    completedDays,
+    showCelebration,
+    isMobile,
+    allDays,
+    currentDayData,
+    currentDayMeta,
+    handleAnswer,
+    getSavedAnswer,
+    handleBack,
+    afterCelebration,
+    startDay,
+    restart,
+    analysis,
+    totalQuestions,
+    answeredSoFar,
+    overallPct,
   };
 
-  const getCurrentAnalysis = useCallback(() => {
-    if (personalityAnalysis) return personalityAnalysis;
-    if (Object.keys(answers).length > 0) return analyzeAnswers(answers, role);
-    return { traits: [], strengths: [], dimensions: { love: 1, goodAt: 1, paidFor: 1, worldNeeds: 1 }, careerHints: [], rawResponses: [] };
-  }, [personalityAnalysis, answers, role]);
-
   return (
-    <IkigaiContext.Provider
-      value={{
-        screen,
-        setScreen,
-        role,
-        dayIndex,
-        questionIndex,
-        answers,
-        completedDays,
-        result,
-        currentDayData,
-        allDays: enrichedDays,
-        justCompletedDay,
-        personalityAnalysis,
-        roleMeta: ROLE_META[role] || {},
-        ROLE_META,
-        PALETTE,
-        goToRoleSelect,
-        selectRoleAndBegin,
-        startDay,
-        handleAnswer,
-        goBack,
-        afterCelebration,
-        restart,
-        computeResult,
-        getCurrentAnalysis,
-        analyzeAnswers: (a) => analyzeAnswers(a, role),
-      }}
-    >
-      {children}
-    </IkigaiContext.Provider>
+    <IkigaiContext.Provider value={value}>{children}</IkigaiContext.Provider>
   );
-}
-
-export function useIkigai() {
-  const ctx = useContext(IkigaiContext);
-  if (!ctx) throw new Error("useIkigai must be used inside <IkigaiProvider>");
-  return ctx;
-}
+};
 
 export default IkigaiContext;
